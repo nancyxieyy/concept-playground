@@ -141,6 +141,7 @@
     const common = 'stroke="#1b2440" stroke-width="3" fill="none" stroke-linejoin="round"';
     const paths = {
       star: '<polygon points="24,4 30,18 46,18 33,28 38,44 24,34 10,44 15,28 2,18 18,18" fill="#ffbd1a" ' + common + '/>',
+      pointer: '<path d="M12 4l5 36 8-12 14 10 5-7-14-9 12-4z" fill="#ffbd1a" ' + common + '/>',
       door: '<rect x="10" y="6" width="28" height="38" rx="3" fill="#c9843a" ' + common + '/><circle cx="30" cy="26" r="3" fill="#ffbd1a" stroke="#1b2440" stroke-width="2"/>',
       folder: '<path d="M6 16h14l4 4h18v20H6z" fill="#ffe08a" ' + common + '/>',
       bot: '<rect x="12" y="10" width="24" height="18" rx="4" fill="#d7deea" ' + common + '/><rect x="16" y="30" width="16" height="12" rx="3" fill="#ff5a47" ' + common + '/>',
@@ -333,6 +334,12 @@
       }, 2000);
       cleanups.push(() => clearTimeout(sayTimer));
     }
+    function hush() {
+      clearTimeout(sayTimer);
+      sayEl.className = 'say';
+      sayEl.replaceChildren();
+      if (!overlayOn) setMood('idle');
+    }
     function flash(el) {
       const node = el || (targetFn && targetFn());
       if (!node) return;
@@ -492,6 +499,7 @@
       const lineEl = sheet.querySelector('.line');
       if (opts.lineHtml) lineEl.innerHTML = opts.lineHtml;
       else lineEl.textContent = opts.line;
+      if (opts.icon) sheet.append(h('div', { class: 'sheet-ico', 'aria-hidden': 'true' }, svgIco(opts.icon)));
       cover(sheet, 'concept');
       setMood('happy');
       sound('ding');
@@ -595,7 +603,7 @@
     bumpIdle();
 
     const api = {
-      stage, setTask, setHint, setTarget, say, fail, right, sound, flash, dragItem, near, snap,
+      stage, setTask, setHint, setTarget, say, hush, fail, right, sound, flash, dragItem, near, snap,
       sleep, finish, cover, uncover, h, svgIco, later, markHot,
       get alive() { return alive; },
       get reduced() { return reduced; },
@@ -703,6 +711,7 @@
       sound('win');
       api.finish({
         title: '鼠标',
+        icon: 'pointer',
         line: '单击选中 · 双击打开 · 拖动搬走',
         quiz: {
           q: '只点一下会怎样',
@@ -835,8 +844,9 @@
         right();
         sound('win');
         api.finish({
-          title: '文件夹·路径',
-          lineHtml: '<b>文件夹</b>像书包，<b>路径</b>是一层层的路线',
+        title: '文件夹·路径',
+        icon: 'folder',
+        lineHtml: '<b>文件夹</b>像书包，<b>路径</b>是一层层的路线',
           line: '文件夹像书包，路径是一层层的路线',
           quiz: {
             q: '书包搬走里面呢',
@@ -867,13 +877,16 @@
       loc = 'desk';
       setTask('照路径找笔记');
       setHint('跟着亮的走');
+      api.hush();
       render();
     }
 
     function nextTarget() {
       if (phase === 'sort') {
         const left = ['cat', 'song', 'story', 'game'].find((k) => nodes[k].parent !== nodes[k].want);
-        return left && stage.querySelector('[data-id="' + (nodes[left].parent === loc ? left : nodes[left].want) + '"]');
+        if (!left) return null;
+        return stage.querySelector('[data-id="' + nodes[left].want + '"]')
+          || stage.querySelector('[data-id="' + left + '"]');
       }
       if (phase === 'pack') {
         if (nodes.draw.parent !== 'work') return stage.querySelector('[data-id="draw"]');
@@ -918,6 +931,7 @@
           'data-testid': 'node-' + id,
           'aria-label': n.name,
         }, svgIco(n.kind === 'folder' ? 'folder' : n.icon), h('span', { class: 'lb' }, n.name));
+        if (n.kind === 'folder') el.append(h('i', { class: 'flap', 'aria-hidden': 'true' }));
         dragItem(el, {
           hits() {
             if (n.kind === 'root') return null;
@@ -1178,6 +1192,7 @@
       }
       api.finish({
         title: '顺序',
+        icon: 'bot',
         line: '按顺序做，错了就是 bug',
         quiz: {
           q: '少了一步它会',
@@ -1253,7 +1268,7 @@
       const kinds = phase === 'square' ? [['go', '前进'], ['turn', '右转']] : [['rep', '重复'], ['go', '前进'], ['turn', '右转']];
       kinds.forEach(([k, label]) => {
         const b = h('button', {
-          class: 'card' + (k === 'rep' && phase === 'circle' ? ' glow' : ''),
+          class: 'card' + (k === 'rep' && (phase === 'tri' || phase === 'circle') ? ' glow' : ''),
           type: 'button', 'data-kind': k, 'data-testid': 'pal-' + k,
         }, label);
         b.addEventListener('click', () => {
@@ -1265,16 +1280,37 @@
         proxyDrag(b, k);
         tray.append(b);
       });
-      setTask(phase === 'square' ? '画出正方形' : phase === 'free' ? '再画一个' : '画出大圆');
-      setHint(phase === 'square' ? '前进右转交替' : phase === 'free' ? '再画一个' : hintForCircle());
-      setTarget(() => (phase === 'circle' ? tray.querySelector('[data-kind="rep"]') : runBtn));
+      setTask(phase === 'square' ? '画出正方形' : phase === 'tri' ? '画出三角形' : phase === 'free' ? '再画一个' : '画出大圆');
+      setHint(phase === 'square' ? '前进右转交替' : phase === 'tri' ? hintForTri() : phase === 'free' ? '再画一个' : hintForCircle());
+      setTarget(() => (phase === 'square' ? runBtn : tray.querySelector('[data-kind="rep"]')));
       freeRow.hidden = phase !== 'free';
     }
 
     function fresh(kind) {
-      if (kind === 'rep') return { kind, n: 4 };
-      if (kind === 'turn') return { kind, ang: phase === 'square' ? 90 : 90 };
+      if (kind === 'rep') return { kind, n: phase === 'circle' ? 24 : 3 };
+      if (kind === 'turn') return { kind, ang: phase === 'circle' ? 15 : 90 };
       return { kind: 'go' };
+    }
+
+    function bumpAng(cur, dir) {
+      const seq = phase === 'circle' ? [15, 30, 60, 120] : [30, 60, 90, 120, 150, 180];
+      let i = seq.indexOf(cur);
+      if (i < 0) {
+        i = 0;
+        seq.forEach((v, k) => { if (Math.abs(v - cur) < Math.abs(seq[i] - cur)) i = k; });
+      }
+      return seq[Math.max(0, Math.min(seq.length - 1, i + dir))];
+    }
+
+    function bumpN(cur, dir) {
+      if (phase !== 'circle') return Math.max(1, Math.min(36, cur + dir));
+      const seq = [3, 6, 12, 24, 36];
+      let i = seq.indexOf(cur);
+      if (i < 0) {
+        i = seq.findIndex((v) => v >= cur);
+        if (i < 0) i = seq.length - 1;
+      }
+      return seq[Math.max(0, Math.min(seq.length - 1, i + dir))];
     }
 
     function tokenEl(tok, index) {
@@ -1284,16 +1320,16 @@
         el.append('右转');
         if (phase !== 'square') {
           const num = h('b', { 'data-testid': 'ang-n' }, String(tok.ang));
-          el.append(holdBtn('−', 'ang-minus', () => { tok.ang = Math.max(10, tok.ang - 10); num.textContent = String(tok.ang); sound('tick'); }));
+          el.append(holdBtn('−', 'ang-minus', () => { tok.ang = bumpAng(tok.ang, -1); num.textContent = String(tok.ang); sound('tick'); }));
           el.append(num);
-          el.append(holdBtn('+', 'ang-plus', () => { tok.ang = Math.min(180, tok.ang + 10); num.textContent = String(tok.ang); sound('tick'); }));
+          el.append(holdBtn('+', 'ang-plus', () => { tok.ang = bumpAng(tok.ang, 1); num.textContent = String(tok.ang); sound('tick'); }));
         }
       } else {
         const num = h('b', { 'data-testid': 'rep-n' }, String(tok.n));
         el.append('重复');
-        el.append(holdBtn('−', 'rep-minus', () => { tok.n = Math.max(1, tok.n - 1); num.textContent = String(tok.n); sound('tick'); }));
+        el.append(holdBtn('−', 'rep-minus', () => { tok.n = bumpN(tok.n, -1); num.textContent = String(tok.n); sound('tick'); }));
         el.append(num);
-        el.append(holdBtn('+', 'rep-plus', () => { tok.n = Math.min(36, tok.n + 1); num.textContent = String(tok.n); sound('tick'); }));
+        el.append(holdBtn('+', 'rep-plus', () => { tok.n = bumpN(tok.n, 1); num.textContent = String(tok.n); sound('tick'); }));
       }
       el.addEventListener('click', (e) => {
         if (e.target.closest('.tiny')) return;
@@ -1323,18 +1359,25 @@
 
     function holdBtn(label, testid, fn) {
       const b = h('button', { class: 'tiny', type: 'button', 'data-testid': testid }, label);
-      let delay = 0, iv = 0;
-      const stop = () => { clearTimeout(delay); clearInterval(iv); delay = 0; iv = 0; };
+      let delay = 0, iv = 0, pid = null;
+      const stop = () => { clearTimeout(delay); clearInterval(iv); delay = 0; iv = 0; pid = null; };
+      const up = (e) => { if (pid == null || e.pointerId === pid) stop(); };
       b.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
-        if (running) return;
+        e.preventDefault();
+        if (running || pid != null) return;
+        pid = e.pointerId;
         fn();
         delay = setTimeout(() => { iv = setInterval(fn, 70); }, 350);
       });
       b.addEventListener('click', (e) => e.stopPropagation());
-      b.addEventListener('pointerup', stop);
-      b.addEventListener('pointercancel', stop);
-      cleanups.push(stop);
+      window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
+      cleanups.push(() => {
+        stop();
+        window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+      });
       return b;
     }
 
@@ -1431,14 +1474,25 @@
       return x === 0 && y === 0 && side > 0 && side === (maxy - miny) && gos === side * 4;
     }
 
-    function isCircle(tokens) {
+    function oneGoTurn(tokens) {
       const { body, rep } = expand(tokens);
-      if (!rep) return false;
-      const turn = body.find((b) => b.kind === 'turn');
-      const go = body.find((b) => b.kind === 'go');
-      if (!turn || !go) return false;
-      const total = rep.n * turn.ang;
-      return rep.n >= 20 && turn.ang <= 15 && turn.ang >= 10 && total >= 340 && total <= 380;
+      if (!rep) return null;
+      const turns = body.filter((b) => b.kind === 'turn');
+      const gos = body.filter((b) => b.kind === 'go');
+      if (turns.length !== 1 || gos.length !== 1) return null;
+      return { rep, turn: turns[0] };
+    }
+
+    function isTriangle(tokens) {
+      const pair = oneGoTurn(tokens);
+      return !!pair && pair.rep.n === 3 && pair.turn.ang === 120;
+    }
+
+    function isCircle(tokens) {
+      const pair = oneGoTurn(tokens);
+      if (!pair) return false;
+      const total = pair.rep.n * pair.turn.ang;
+      return pair.rep.n >= 18 && pair.turn.ang <= 20 && pair.turn.ang >= 10 && total >= 330 && total <= 390;
     }
 
     function trace(tokens) {
@@ -1475,6 +1529,11 @@
 
     function placeTurtle(p) {
       turtle.setAttribute('transform', 'translate(' + p.x + ' ' + p.y + ') rotate(' + p.deg + ')');
+    }
+
+    function clearPond() {
+      poly.setAttribute('points', '');
+      placeTurtle({ x: 150, y: 200, deg: 0 });
     }
 
     function burst() {
@@ -1518,13 +1577,27 @@
         api.say('围好啦', 'ok');
         await sleep(800);
         if (!api.alive) return;
-        phase = 'circle';
+        phase = 'tri';
         model = [null, null, null];
+        clearPond();
         render();
         api.say('同样的事说一遍', 'hint');
         return;
       }
-      if (phase !== 'square' && isCircle(model)) {
+      if (phase === 'tri' && isTriangle(model)) {
+        right();
+        sound('ding');
+        burst();
+        api.say('三角好啦', 'ok');
+        await sleep(800);
+        if (!api.alive) return;
+        phase = 'circle';
+        clearPond();
+        render();
+        api.say('转小一点', 'hint');
+        return;
+      }
+      if (phase === 'circle' && isCircle(model)) {
         right();
         sound('win');
         burst();
@@ -1533,12 +1606,14 @@
         if (!api.alive || phase === 'free') return;
         api.finish({
           title: '重复',
+          icon: 'turtle',
           line: '同样的动作，说几次就够',
           extra: {
             label: '再画',
             onClick() {
               phase = 'free';
               finishedGuard();
+              clearPond();
               render();
               api.say('再画一个', 'hint');
             },
@@ -1556,18 +1631,33 @@
         return;
       }
       if (phase === 'free') { api.say('好看', 'ok'); return; }
-      const tip = phase === 'square' ? '还没围好' : hintForCircle();
+      const tip = phase === 'square' ? '还没围好' : phase === 'tri' ? hintForTri() : hintForCircle();
       setHint(tip);
       fail(tip);
+    }
+
+    function hintForTri() {
+      const rep = model.find((t) => t && t.kind === 'rep');
+      const turn = model.find((t) => t && t.kind === 'turn');
+      const go = model.find((t) => t && t.kind === 'go');
+      if (!rep) return '用重复卡';
+      if (!turn || turn.ang !== 120) return '每次转120度';
+      if (rep.n !== 3) return '次数调成3';
+      if (!go) return '要有前进';
+      return '用重复卡';
     }
 
     function hintForCircle() {
       const rep = model.find((t) => t && t.kind === 'rep');
       const turn = model.find((t) => t && t.kind === 'turn');
+      const go = model.find((t) => t && t.kind === 'go');
       if (!rep) return '用重复卡';
-      if (rep.n < 36) return '次数调成36';
-      if (!turn || turn.ang !== 10) return '每次转10度';
-      return '要有前进';
+      if (!turn || turn.ang > 30) return '角度再减小';
+      if (rep.n < 18) return '次数再加大';
+      if (!go) return '要有前进';
+      if (rep.n * turn.ang > 390) return '次数太多啦';
+      if (rep.n * turn.ang < 330) return '还没转够';
+      return '再调一调';
     }
 
     function finishedGuard() {

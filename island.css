@@ -295,6 +295,7 @@ button { touch-action: manipulation; }
   padding: 16px;
 }
 .sheet {
+  position: relative;
   width: min(640px, 100%);
   background: var(--card);
   border: 3px solid var(--ink);
@@ -313,6 +314,14 @@ button { touch-action: manipulation; }
   line-height: 1.1;
 }
 .sheet .line { margin: 0; font-size: 22px; font-weight: 800; }
+.sheet-ico {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  width: 48px;
+  height: 48px;
+}
+.sheet-ico .ico, .sheet-ico svg { width: 48px; height: 48px; display: block; }
 .sheet .line b { color: var(--sky); }
 .opts { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .opt {
@@ -403,6 +412,22 @@ button { touch-action: manipulation; }
 .piece.is-dragging { z-index: 6; filter: drop-shadow(4px 10px 0 rgba(27,36,64,.25)); }
 .piece.file { background: #fff; }
 .piece.folder { background: #ffe9a8; }
+.piece.folder .flap {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  width: 44px;
+  height: 14px;
+  margin-left: -22px;
+  background: #f6c453;
+  border: 3px solid var(--ink);
+  border-bottom: none;
+  border-radius: 7px 7px 2px 2px;
+  transform-origin: left bottom;
+  transition: transform 180ms ease;
+  pointer-events: none;
+}
+.piece.folder.is-hot .flap { transform: translateY(-18px) rotate(-42deg); }
 .tray, .slots { display: flex; flex-wrap: wrap; gap: 8px; }
 .slot {
   min-width: 108px;
@@ -462,12 +487,46 @@ button { touch-action: manipulation; }
 }
 .bot .arm { position: absolute; top: 124px; width: 36px; height: 12px; background: #d7deea; border: 3px solid var(--ink); border-radius: 8px; }
 .bot .arm.l { left: 8px; }
-.bot .arm.r { right: 8px; }
+.bot .arm.r { right: 8px; transform-origin: left center; }
+.bot.show-paste .arm.r { width: 54px; transform: rotate(-40deg); }
 .bot .paste {
-  display: none; position: absolute; right: 6px; top: 112px; width: 22px; height: 16px;
-  background: #9ad7ff; border: 3px solid var(--ink); border-radius: 10px;
+  display: none;
+  position: absolute;
+  right: -16px;
+  top: 92px;
+  width: 48px;
+  height: 36px;
+  background: #3aa0f0;
+  border: 3px solid var(--ink);
+  border-radius: 46% 54% 42% 58%;
+  z-index: 2;
 }
-.bot.show-paste .paste { display: block; }
+.bot .paste::before,
+.bot .paste::after {
+  content: "";
+  position: absolute;
+  background: #3aa0f0;
+  border: 3px solid var(--ink);
+}
+.bot .paste::before {
+  width: 16px;
+  height: 26px;
+  left: 8px;
+  top: 28px;
+  border-radius: 0 0 12px 12px;
+}
+.bot .paste::after {
+  width: 22px;
+  height: 16px;
+  right: -14px;
+  top: 6px;
+  border-radius: 50%;
+}
+.bot.show-paste .paste { display: block; animation: splat 200ms ease; }
+@keyframes splat {
+  from { transform: scale(0.3); }
+  to { transform: scale(1); }
+}
 .bot .foot {
   position: absolute; bottom: 18px; width: 42px; height: 28px; background: #d7deea;
   border: 3px solid var(--ink); border-radius: 12px;
