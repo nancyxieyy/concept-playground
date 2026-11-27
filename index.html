@@ -2,42 +2,23 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="claude:viewport-fit-sides" content="cover">
-<title>概念游乐场</title>
-<!-- 字体不阻塞页面：打不开 Google Fonts 时直接用系统字体 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=ZCOOL+KuaiLe&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="core.css?v=2">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#e7f4ff">
+<title>电脑小岛 · 概念游乐场</title>
+<link rel="icon" href="assets/lucky.svg">
+<link rel="stylesheet" href="island.css">
 </head>
 <body>
-<div class="wrap" id="app"></div>
+<div class="portrait-gate" role="status">
+  <svg class="turn-ico" viewBox="0 0 80 80" aria-hidden="true">
+    <rect x="22" y="8" width="36" height="56" rx="6" fill="#fff" stroke="#1b2440" stroke-width="4"/>
+    <path d="M18 62c8 10 36 10 44 0" fill="none" stroke="#1b2440" stroke-width="4" stroke-linecap="round"/>
+    <path d="M58 66l6-4-2 8z" fill="#1b2440"/>
+  </svg>
+  <p>请横过来</p>
+</div>
+<div class="app" id="app"></div>
 <noscript>这个页面要打开 JavaScript 才能玩。</noscript>
-<script src="core.js?v=2"></script>
-<script src="k0-mouse.js?v=2"></script>
-<script src="k0-keys.js?v=2"></script>
-<script src="k0-files.js?v=2"></script>
-<script src="k1-order.js?v=2"></script>
-<script src="k1-ifthen.js?v=2"></script>
-<script src="k1-repeat.js?v=2"></script>
-<script src="k1-binary.js?v=2"></script>
-<script src="k1-web.js?v=2"></script>
-<script src="k2-next.js?v=2"></script>
-<script src="k2-wrong.js?v=2"></script>
-<script src="k2-rules.js?v=2"></script>
-<script src="k2-say3.js?v=2"></script>
-<script src="g01-var.js?v=2"></script>
-<script src="g02-event.js?v=2"></script>
-<script src="g03-random.js?v=2"></script>
-<script src="g04-coord.js?v=2"></script>
-<script src="g05-loop.js?v=2"></script>
-<script src="g06-hit.js?v=2"></script>
-<script src="g07-state.js?v=2"></script>
-<script src="g08-func.js?v=2"></script>
-<script src="g09-io.js?v=2"></script>
-<script src="g10-save.js?v=2"></script>
-<script src="g11-debug.js?v=2"></script>
-<script src="g12-ai.js?v=2"></script>
-<script>PG.start();</script>
+<script src="island.js"></script>
 </body>
 </html>
