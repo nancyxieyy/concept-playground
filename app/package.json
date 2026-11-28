@@ -1,0 +1,13 @@
+{
+  "name": "computer-island-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "sync": "node scripts/sync-www.mjs",
+    "build:mac": "npm run sync && tauri build --target aarch64-apple-darwin --bundles app,dmg",
+    "dev": "npm run sync && tauri dev"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

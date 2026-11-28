@@ -12,7 +12,7 @@
       var opened = false;
       var doorOpen = false;
       var key = null;
-      var last = 0;
+      var last = null;
       var wait = null;
 
       var door = scene.add.container(1030, 458).setDepth(8);
@@ -185,9 +185,9 @@
         Island.sfx.play('click');
         Island.fx.ring(scene, p.worldX, p.worldY);
         var now = scene.time.now;
-        if (now - last < cfg.tuning.dblMs) {
+        if (last !== null && now - last < cfg.tuning.dblMs) {
           if (wait) wait.remove();
-          last = 0;
+          last = null;
           openGift();
           return;
         }

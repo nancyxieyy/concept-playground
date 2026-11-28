@@ -152,16 +152,14 @@
 
   Island.sfx = {
     unlock: function () {
-      if (unlocked) {
-        if (ctx && ctx.state === 'suspended') {
-          try { ctx.resume(); } catch (e) {}
-        }
-        return;
-      }
       if (!ensure()) return;
       unlocked = true;
-      if (ctx.state === 'suspended') {
-        try { ctx.resume(); } catch (e) {}
+      // WebKit 从后台返回也可能为 interrupted；只在新的用户手势里恢复。
+      if (ctx.state === 'suspended' || ctx.state === 'interrupted') {
+        try {
+          var pending = ctx.resume();
+          if (pending && pending.catch) pending.catch(function () {});
+        } catch (e) {}
       }
     },
     setMuted: function (m) { muted = !!m; },

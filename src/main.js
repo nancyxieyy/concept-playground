@@ -1,4 +1,4 @@
-/* 启动游戏、键盘和转场看门狗。不改地址栏，不跳页面。 */
+/* 启动游戏、键盘和转场看门狗。大人组合键重载当前页面以应用开关。 */
 (function () {
   'use strict';
   var Island = window.Island;
@@ -35,8 +35,9 @@
 
   if (document.fonts && document.fonts.load) {
     Promise.all([
-      document.fonts.load('40px ZK'),
-      document.fonts.load('700 28px NotoSC')
+      document.fonts.load('40px ZK', '电脑小岛'),
+      document.fonts.load('400 28px NotoSC', '电脑小岛'),
+      document.fonts.load('700 28px NotoSC', '电脑小岛')
     ]).then(startGame).catch(startGame);
   } else {
     startGame();
@@ -45,8 +46,25 @@
   window.addEventListener('pointerdown', function () { Island.sfx.unlock(); }, true);
   window.addEventListener('keydown', onKey, true);
 
+  function toggleParam(name, value) {
+    var url = new URL(location.href);
+    if (url.searchParams.get(name) === value) url.searchParams.delete(name);
+    else url.searchParams.set(name, value);
+    location.replace(url.href);
+  }
+
   function onKey(e) {
     Island.sfx.unlock();
+    // Option 会改变 e.key 的字符；物理键位在 Mac 上仍然稳定。
+    if (e.shiftKey && e.altKey && !e.metaKey && !e.ctrlKey) {
+      var switches = { KeyU: ['unlock', 'all'], KeyC: ['calm', '1'], KeyD: ['debug', '1'] };
+      var option = switches[e.code];
+      if (option) {
+        e.preventDefault();
+        if (!e.repeat) toggleParam(option[0], option[1]);
+        return;
+      }
+    }
     if (e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'r' || e.key === 'R') && !e.repeat) {
       e.preventDefault();
       Island.store.reset();
