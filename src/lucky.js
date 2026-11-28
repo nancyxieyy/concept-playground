@@ -8,13 +8,10 @@
     cheer: 'lucky-cheer',
     think: 'lucky-thinking',
     carry: 'lucky-carry-box',
-    focus: 'lucky-focused',
     clap: 'lucky-clap',
     walk: 'lucky-walk',
     sleepy: 'lucky-sleepy',
-    raise: 'lucky-raise-hand',
-    ok: 'lucky-its-ok',
-    happy: 'lucky-happy'
+    raise: 'lucky-raise-hand'
   };
 
   function Lucky(scene, x, y, opt) {
