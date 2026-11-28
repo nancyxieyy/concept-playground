@@ -51,6 +51,7 @@
         obj: obj,
         opt: opt,
         down: false,
+        pointerId: null,
         dragging: false,
         sx: 0,
         sy: 0,
@@ -103,7 +104,7 @@
         obj.setScale(obj._bsx, obj._bsy);
       });
       obj.on('pointerdown', function (p) {
-        if (Island.state !== 'PLAY' || (opt.enabled && !opt.enabled())) return;
+        if (Island.state !== 'PLAY' || st.down || Island.drag.busy || (opt.enabled && !opt.enabled())) return;
         if (Island.DEBUG) Island._inAt = performance.now();
         Island.sfx.play('press');
         obj.setScale(obj._bsx * 0.92, obj._bsy * 0.92);
@@ -115,6 +116,7 @@
           });
         }
         st.down = true;
+        st.pointerId = p.id;
         st.dragging = false;
         st.sx = p.worldX;
         st.sy = p.worldY;
@@ -129,7 +131,7 @@
       });
 
       st.onMove = function (p) {
-        if (!st.down) return;
+        if (!st.down || p.id !== st.pointerId) return;
         var dx = p.worldX - st.sx;
         var dy = p.worldY - st.sy;
         if (!st.dragging && dx * dx + dy * dy >= 36) {
@@ -149,8 +151,9 @@
         st.ty = p.worldY - 20;
       };
       st.onUp = function (p) {
-        if (!st.down) return;
+        if (!st.down || p.id !== st.pointerId) return;
         st.down = false;
+        st.pointerId = null;
         scene.input.setDefaultCursor('default');
         if (obj.input) obj.input.cursor = 'pointer';
         breathe(false);
@@ -215,15 +218,40 @@
         }
       };
 
+      // 移出画布松手或窗口失焦时取消，避免下一次移动还拖着物体。
+      st.cancel = function (p) {
+        if (!st.down || (p && p.id !== st.pointerId)) return;
+        var dragging = st.dragging;
+        st.down = false;
+        st.dragging = false;
+        st.pointerId = null;
+        breathe(false);
+        scene.input.setDefaultCursor('default');
+        if (obj.input) obj.input.cursor = 'pointer';
+        obj.setPosition(st.ox, st.oy);
+        obj.setScale(obj._bsx, obj._bsy);
+        obj.rotation = 0;
+        if (dragging) {
+          obj.setDepth(obj._depth0 || 20);
+          Island.drag.busy = false;
+          Island.drag.just = false;
+        }
+      };
+      function onBlur() { st.cancel(); }
       scene.input.on('pointermove', st.onMove);
       scene.input.on('pointerup', st.onUp);
+      scene.input.on('pointerupoutside', st.cancel);
+      window.addEventListener('blur', onBlur);
       function dropListeners() {
         if (st._gone) return;
         st._gone = true;
         if (scene.input) {
           scene.input.off('pointermove', st.onMove);
           scene.input.off('pointerup', st.onUp);
+          scene.input.off('pointerupoutside', st.cancel);
         }
+        window.removeEventListener('blur', onBlur);
+        if (st.dragging) Island.drag.busy = false;
         var i = live.indexOf(st);
         if (i >= 0) live.splice(i, 1);
       }

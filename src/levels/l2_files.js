@@ -279,7 +279,7 @@
       }
 
       function dbl(obj, fn) {
-        var last = 0;
+        var last = null;
         obj.setInteractive({
           hitArea: Island.hit.rect(obj, obj.width, obj.height),
           hitAreaCallback: Phaser.Geom.Rectangle.Contains,
@@ -297,8 +297,8 @@
           Island.sfx.play('click');
           Island.fx.ring(scene, p.worldX, p.worldY);
           var now = scene.time.now;
-          if (now - last < cfg.tuning.dblMs) {
-            last = 0;
+          if (last !== null && now - last < cfg.tuning.dblMs) {
+            last = null;
             fn();
           } else last = now;
         });
