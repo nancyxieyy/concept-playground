@@ -204,6 +204,13 @@
       armStars();
       api.intro(stars);
 
+      if (scene.qaScreen && scene.qaScreen.round > 1) {
+        lit = 3;
+        stars.forEach(function (s) { s.lit = true; s.setTexture('prop-star-lit').setDisplaySize(92, 90); });
+        showGift();
+        if (scene.qaScreen.round === 3) openGift();
+      }
+
       this._tick = function (time) {
         stars.forEach(function (s, i) {
           if (!s.lit) s.y = s.baseY + Math.sin(time / 420 + i) * 8;

@@ -11,6 +11,8 @@
   Island.params = params;
   Island.MOTION = { calm: reduce || params.get('calm') === '1' };
   Island.DEBUG = params.get('debug') === '1';
+  Island.QA_TOUR = Island.DEBUG && params.get('qa') === 'tour';
+  if (Island.QA_TOUR) Island.MOTION.calm = true;
   Island.FONT = 'ZK, "PingFang SC", "Microsoft YaHei", sans-serif';
   Island.BODY = 'NotoSC, "PingFang SC", "Microsoft YaHei", sans-serif';
   Island.state = 'BOOT';

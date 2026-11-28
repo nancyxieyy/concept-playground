@@ -14,10 +14,10 @@
       var held = null;
       var moved = false;
 
-      var desk = Island.ui.panel(scene, 670, 230, 620, 196);
+      var desk = Island.ui.panel(scene, 670, 290, 640, 204);
       desk.setDepth(6);
-      var deskTag = Island.ui.tag(scene, 430, 148, '桌面', 'peach', 'icon-house');
-      deskTag.setDepth(7);
+      var deskPath = Island.ui.breadcrumb(scene, 360, 156, ['桌面']);
+      deskPath.setDepth(20);
 
       function box(x, y, key, w, label) {
         var probe = scene.add.image(0, 0, key);
@@ -26,8 +26,9 @@
         var c = scene.add.container(x, y).setDepth(10);
         var shadow = scene.add.ellipse(0, h * 0.42, w * 0.72, 18, 0x4A3222, 0.22);
         var body = scene.add.image(0, 0, key).setDisplaySize(w, h);
-        var tag = Island.ui.tag(scene, 0, h * 0.48, label, 'cream');
+        var tag = Island.ui.tag(scene, 0, h / 2 + 33, label, 'cream');
         c.add([shadow, body, tag]);
+        c.tag = tag;
         c.lid = { angle: 0 };
         c._bsx = 1;
         c._bsy = 1;
@@ -38,16 +39,20 @@
       var draw = box(440, 560, 'prop-crate-peach', 220, '画画');
       var music = box(734, 560, 'prop-crate-blue', 220, '音乐');
       var works = box(1043, 548, 'prop-crate-mint', 250, '我的作品');
+      [draw, music, works].forEach(function (b) {
+        b.y = 633 - b.list[1].displayHeight / 2;
+        b.tag.y = 666 - b.y;
+      });
       var boxes = { draw: draw, music: music, works: works };
       draw.boxId = 'draw';
       music.boxId = 'music';
       works.boxId = 'works';
 
       var defs = [
-        { id: 'cat', label: '小猫.png', box: 'draw', x: 470, y: 214, key: 'prop-file-cat' },
-        { id: 'song', label: '生日歌.mp3', box: 'music', x: 590, y: 214, key: 'prop-file-music' },
-        { id: 'story', label: '我的故事.txt', box: 'works', x: 730, y: 214, key: 'prop-file-story' },
-        { id: 'html', label: '接星星.html', box: 'works', x: 870, y: 214, key: 'prop-file-game' }
+        { id: 'cat', label: '小猫.png', box: 'draw', x: 435, y: 260, key: 'prop-file-cat' },
+        { id: 'song', label: '生日歌.mp3', box: 'music', x: 585, y: 260, key: 'prop-file-music' },
+        { id: 'story', label: '我的故事.txt', box: 'works', x: 735, y: 260, key: 'prop-file-story' },
+        { id: 'html', label: '接星星.html', box: 'works', x: 885, y: 260, key: 'prop-file-game' }
       ];
       var items = defs.map(function (d) {
         var c = scene.add.container(d.x, d.y).setDepth(16);
@@ -77,43 +82,32 @@
         return c;
       });
 
-      var inner = scene.add.container(640, 400).setDepth(12).setVisible(false);
-      var innerPanel = Island.ui.panel(scene, 0, 0, 560, 320);
-      var innerDraw = box(0, 40, 'prop-crate-peach', 200, '画画');
+      var inner = scene.add.container(670, 390).setDepth(12).setVisible(false);
+      var innerPanel = Island.ui.panel(scene, 0, 0, 640, 388);
+      var innerDraw = box(-150, 40, 'prop-crate-peach', 200, '画画');
       inner.add(innerPanel);
-      innerDraw.setPosition(0, 40);
+      innerDraw.setPosition(-150, 40);
       inner.add(innerDraw);
-      var decoy = scene.add.container(180, 20);
+      var decoy = scene.add.container(40, 20);
       var decoyImg = scene.add.image(0, -10, 'prop-file-story');
       decoyImg.setDisplaySize(80, 80);
       decoy.add([decoyImg, Island.ui.tag(scene, 0, 50, '我的故事.txt', 'file')]);
       decoy.setSize(120, 120);
       inner.add(decoy);
-      var cat = scene.add.container(640, 400).setVisible(false).setDepth(16);
+      var gameFile = scene.add.container(200, 20);
+      gameFile.add([scene.add.image(0, -10, 'prop-file-game').setDisplaySize(80, 80),
+        Island.ui.tag(scene, 0, 50, '接星星.html', 'file')]);
+      inner.add(gameFile);
+      var cat = scene.add.container(670, 390).setVisible(false).setDepth(16);
       var catImg = scene.add.image(0, -16, 'prop-file-cat');
       catImg.setDisplaySize(140, 160);
       cat.add([catImg, Island.ui.tag(scene, 0, 90, '小猫.png', 'file')]);
       cat.setSize(160, 200);
 
-      var names = ['桌面', '我的作品', '画画'];
-      var cells = [];
-      var bar = scene.add.container(640, 118);
-      names.forEach(function (name, i) {
-        var cell = Island.ui.tag(scene, (i - 1) * 180, 0, name, i === 0 ? 'peach' : 'cream');
-        cells.push(cell);
-        bar.add(cell);
-      });
-      scene.hud.add(bar);
-      bar.setVisible(false);
-
-      function paintCell(i, on) {
-        var cell = cells[i];
-        var plate = cell.list && cell.list[0];
-        if (plate && plate.setTexture) plate.setTexture(on ? 'ui-tag-mint-9slice' : 'ui-tag-cream-9slice');
-      }
-      function markPath(depth) {
-        for (var i = 0; i < 3; i++) paintCell(i, i === depth);
-      }
+      var bar = Island.ui.breadcrumb(scene, 360, 156, ['桌面', '我的作品', '画画']);
+      var cells = bar.cells;
+      bar.setDepth(20).setVisible(false);
+      function markPath(depth) { bar.setIndex(depth); }
       function shakeCell(i) {
         var cell = cells[i];
         if (Island.MOTION.calm) return;
@@ -139,8 +133,8 @@
         view = 'desk';
         inner.setVisible(false);
         cat.setVisible(false);
-        desk.setVisible(true);
-        deskTag.setVisible(true);
+        desk.setVisible(round === 1 && !!loose());
+        deskPath.setVisible(round < 3);
         draw.setVisible(!moved);
         music.setVisible(true);
         works.setVisible(true);
@@ -151,23 +145,25 @@
         view = 'works';
         items.forEach(function (it) { it.setVisible(false); });
         desk.setVisible(false);
-        deskTag.setVisible(false);
+        deskPath.setVisible(false);
         draw.setVisible(false);
         music.setVisible(false);
         works.setVisible(false);
         inner.setVisible(true);
         innerDraw.setVisible(moved);
         decoy.setVisible(true);
+        gameFile.setVisible(true);
         cat.setVisible(false);
         markPath(1);
       }
       function showDraw() {
         view = 'draw';
         desk.setVisible(false);
-        deskTag.setVisible(false);
+        deskPath.setVisible(false);
         inner.setVisible(true);
         innerDraw.setVisible(false);
         decoy.setVisible(false);
+        gameFile.setVisible(false);
         cat.setVisible(true);
         markPath(2);
       }
@@ -217,6 +213,7 @@
       }
       function startMove() {
         round = 2;
+        desk.setVisible(false);
         api.setTask(cfg.tasks[1]);
         Island.drag.make(scene, draw, {
           key: 'drawbox',
@@ -340,6 +337,18 @@
       api.setTask(cfg.tasks[0]);
       armSort();
       api.intro(items.concat([draw, music, works]));
+
+      // 巡检从本轮初态搭画面，不调用答对、奖励或自动演示。
+      if (scene.qaScreen && scene.qaScreen.round > 1) {
+        items.forEach(function (it) { it.placed = true; it.setVisible(false); it.disableInteractive(); });
+        startMove();
+        if (scene.qaScreen.round === 3) {
+          moved = true;
+          startPath();
+          if (scene.qaScreen.view === 'works') showWorks();
+          if (scene.qaScreen.view === 'draw') { showWorks(); showDraw(); }
+        }
+      }
 
       self._held = function () { return held; };
       self._boxes = [draw, music, works];
