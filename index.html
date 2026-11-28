@@ -3,41 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="claude:viewport-fit-sides" content="cover">
-<title>概念游乐场</title>
-<!-- 字体不阻塞页面：打不开 Google Fonts 时直接用系统字体 -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&family=ZCOOL+KuaiLe&display=swap" media="print" onload="this.media='all'">
-<link rel="stylesheet" href="core.css?v=2">
+<link rel="icon" href="data:,">
+<title>电脑小岛</title>
+<style>
+  @font-face { font-family: ZK; src: url("assets/ui-v1/fonts/ZCOOLKuaiLe-Regular.ttf"); font-display: block; }
+  @font-face { font-family: NotoSC; font-weight: 400; src: url("assets/ui-v1/fonts/NotoSansCJKsc-Regular-subset.woff2"); font-display: block; }
+  @font-face { font-family: NotoSC; font-weight: 700; src: url("assets/ui-v1/fonts/NotoSansCJKsc-Bold-subset.woff2"); font-display: block; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8FD0EA; }
+  #game { position: fixed; inset: 0; overflow: hidden; }
+  canvas { display: block; }
+</style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
-<noscript>这个页面要打开 JavaScript 才能玩。</noscript>
-<script src="core.js?v=2"></script>
-<script src="k0-mouse.js?v=2"></script>
-<script src="k0-keys.js?v=2"></script>
-<script src="k0-files.js?v=2"></script>
-<script src="k1-order.js?v=2"></script>
-<script src="k1-ifthen.js?v=2"></script>
-<script src="k1-repeat.js?v=2"></script>
-<script src="k1-binary.js?v=2"></script>
-<script src="k1-web.js?v=2"></script>
-<script src="k2-next.js?v=2"></script>
-<script src="k2-wrong.js?v=2"></script>
-<script src="k2-rules.js?v=2"></script>
-<script src="k2-say3.js?v=2"></script>
-<script src="g01-var.js?v=2"></script>
-<script src="g02-event.js?v=2"></script>
-<script src="g03-random.js?v=2"></script>
-<script src="g04-coord.js?v=2"></script>
-<script src="g05-loop.js?v=2"></script>
-<script src="g06-hit.js?v=2"></script>
-<script src="g07-state.js?v=2"></script>
-<script src="g08-func.js?v=2"></script>
-<script src="g09-io.js?v=2"></script>
-<script src="g10-save.js?v=2"></script>
-<script src="g11-debug.js?v=2"></script>
-<script src="g12-ai.js?v=2"></script>
-<script>PG.start();</script>
+<div id="game"></div>
+<noscript>请打开 JavaScript 后再玩。</noscript>
+<script src="vendor/phaser.min.js"></script>
+<script src="src/config.js"></script>
+<script src="src/pack.js"></script>
+<script src="src/store.js"></script>
+<script src="src/sfx.js"></script>
+<script src="src/fx.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/lucky.js"></script>
+<script src="src/drag.js"></script>
+<script src="src/coach.js"></script>
+<script src="src/levels/levels.js"></script>
+<script src="src/levels/l1_door.js"></script>
+<script src="src/levels/l2_files.js"></script>
+<script src="src/levels/l3_robot.js"></script>
+<script src="src/levels/l4_turtle.js"></script>
+<script src="src/scenes/Boot.js"></script>
+<script src="src/scenes/MapScene.js"></script>
+<script src="src/scenes/LevelScene.js"></script>
+<script src="src/main.js"></script>
 </body>
 </html>
