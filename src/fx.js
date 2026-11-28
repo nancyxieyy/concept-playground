@@ -67,8 +67,8 @@
   function clampCenter(cam, x, y, z) {
     var W = Island.DESIGN.w;
     var H = Island.DESIGN.h;
-    var vw = cam.width / z;
-    var vh = cam.height / z;
+    var vw = cam.width / (z * Island.renderScale);
+    var vh = cam.height / (z * Island.renderScale);
     return {
       x: vw >= W ? W / 2 : Math.max(vw / 2, Math.min(W - vw / 2, x)),
       y: vh >= H ? H / 2 : Math.max(vh / 2, Math.min(H - vh / 2, y))
@@ -78,7 +78,7 @@
   function placeCam(cam, x, y, z) {
     z = clampZoom(z);
     var c = clampCenter(cam, x, y, z);
-    cam.setZoom(z);
+    cam.setZoom(z * Island.renderScale);
     cam.centerOn(c.x, c.y);
   }
 
@@ -92,7 +92,7 @@
       if (scene.time) scene.time.delayedCall(Math.min(dur || 150, 150), function () { if (onDone) onDone(); });
       return;
     }
-    var fromZ = cam.zoom || 1;
+    var fromZ = cam.zoom / Island.renderScale;
     var from = camCenter(cam);
     var state = { zoom: fromZ };
     scene.tweens.add({
@@ -104,7 +104,7 @@
         var p = tween && typeof tween.progress === 'number' ? tween.progress : 1;
         var z = clampZoom(state.zoom);
         var c = clampCenter(cam, from.x + (cx - from.x) * p, from.y + (cy - from.y) * p, z);
-        cam.setZoom(z);
+        cam.setZoom(z * Island.renderScale);
         cam.centerOn(c.x, c.y);
       },
       onComplete: function () {
@@ -121,11 +121,12 @@
     var z = cam.zoom || 1;
     var left = cam.scrollX + cam.width * 0.5 * (1 - 1 / z);
     var top = cam.scrollY + cam.height * 0.5 * (1 - 1 / z);
-    scene.hud.setScale(1 / z);
+    var uiScale = Island.renderScale / z;
+    scene.hud.setScale(uiScale);
     scene.hud.x = left;
-    scene.hud.y = top + (scene.hudNudge || 0) / z;
+    scene.hud.y = top + (scene.hudNudge || 0) * uiScale;
     if (scene.flash) {
-      scene.flash.setScale(1 / z);
+      scene.flash.setScale(uiScale);
       scene.flash.x = cam.scrollX + cam.width * 0.5;
       scene.flash.y = cam.scrollY + cam.height * 0.5;
     }
@@ -347,8 +348,8 @@
       var cam = scene.cameras.main;
       var z = cam.zoom || 1;
       return {
-        x: (x - (cam.scrollX + cam.width * 0.5)) * z + cam.width * 0.5,
-        y: (y - (cam.scrollY + cam.height * 0.5)) * z + cam.height * 0.5
+        x: ((x - (cam.scrollX + cam.width * 0.5)) * z + cam.width * 0.5) / Island.renderScale,
+        y: ((y - (cam.scrollY + cam.height * 0.5)) * z + cam.height * 0.5) / Island.renderScale
       };
     }
   };

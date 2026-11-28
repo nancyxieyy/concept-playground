@@ -44,7 +44,6 @@
 
       this.task = Island.ui.task(this);
       this.task.setText(cfg.tasks[0]);
-      this.task.y = -40;
       this.beads = Island.ui.beads(this, cfg.tasks.length);
       this.home = Island.ui.round(this, 56, 52, 'back', function () { self.exitHome(); }, { states: ['PLAY'] });
       this.hintBtn = Island.ui.round(this, 1144, 52, 'hint', function () {
@@ -59,6 +58,14 @@
       this.counter = Island.ui.beans(this, 1040, 52);
       this.counter.setCount(Math.max(0, Island.store.totalStars()));
       this.hud.add([this.task, this.beads, this.home, this.hintBtn, this.counter, this.mute]);
+      Island.layout.watch(this, function (rect) {
+        this.home.setHomePosition(rect.left + 56, rect.top + 52);
+        this.beads.setPosition(rect.left + 104, rect.top + 52);
+        this.mute.setHomePosition(rect.right - 56, rect.top + 52);
+        this.hintBtn.setHomePosition(rect.right - 136, rect.top + 52);
+        this.counter.setPosition(rect.right - 240, rect.top + 52);
+        this.task.setPosition(rect.centerX, rect.top + 78);
+      });
 
       this.lucky = new Island.Lucky(this, -200, this.stand.y, { h: 250, pose: 'point' });
       this.coach = Island.coach.attach(this, cfg.tuning);
@@ -72,7 +79,13 @@
       } else {
         this.tweens.add({ targets: this.flash, alpha: 0, duration: 200 });
       }
-      Island.fx.tween(this, this.task, { y: 78 }, { dur: 300, delay: 60, ease: 'Back.easeOut' });
+      // 入场位移作用在任务牌内部，resize 重摆外层不会被旧 tween 拉回。
+      var taskParts = this.task.list.slice();
+      if (!calm) taskParts.forEach(function (part) {
+        var y = part.y;
+        part.y -= 118;
+        Island.fx.tween(self, part, { y: y }, { dur: 300, delay: 60, ease: 'Back.easeOut' });
+      });
 
       this.time.delayedCall(calm ? 40 : 160, function () {
         if (!alive(self)) return;
@@ -255,7 +268,7 @@
 
     paint(name) {
       var key = name === 'porch' ? 'bg-l1' : name === 'storage' ? 'bg-l2' : name === 'hall' ? 'bg-l3' : 'bg-l4';
-      this.add.image(0, 0, key).setOrigin(0, 0).setDisplaySize(1280, 800).setDepth(0);
+      Island.layout.background(this, key);
     }
 
     update(time, delta) {

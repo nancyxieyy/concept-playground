@@ -17,15 +17,15 @@
     var game = new Phaser.Game({
       type: Phaser.AUTO,
       parent: 'game',
-      width: 1280,
-      height: 800,
+      width: Island.DESIGN.w * Island.renderScale,
+      height: Island.DESIGN.h * Island.renderScale,
       backgroundColor: '#8FD0EA',
       banner: false,
       disableContextMenu: true,
       audio: { noAudio: true },
       fps: { target: 60 },
       scale: {
-        mode: Phaser.Scale.ENVELOP,
+        mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
       },
       scene: [Island.BootScene, Island.MapScene, Island.LevelScene]

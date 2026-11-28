@@ -11,7 +11,12 @@
   @font-face { font-family: NotoSC; font-weight: 700; src: url("assets/ui-v1/fonts/NotoSansCJKsc-Bold-subset.woff2"); font-display: block; }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #8FD0EA; }
   #game { position: fixed; inset: 0; overflow: hidden; }
-  canvas { display: block; }
+  #game::before {
+    content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background: var(--scene-background) center / cover no-repeat;
+    filter: blur(20px) brightness(0.9) saturate(0.85); transform: scale(1.1);
+  }
+  canvas { display: block; position: relative; z-index: 1; }
 </style>
 </head>
 <body>
@@ -19,6 +24,7 @@
 <noscript>请打开 JavaScript 后再玩。</noscript>
 <script src="vendor/phaser.min.js"></script>
 <script src="src/config.js"></script>
+<script src="src/layout.js"></script>
 <script src="src/pack.js"></script>
 <script src="src/store.js"></script>
 <script src="src/sfx.js"></script>
