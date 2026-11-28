@@ -9,7 +9,7 @@
     create: function (scene, cfg) {
       var api = scene.api;
       var self = this;
-      api.placeLucky(180, 690);
+      api.placeLucky(150, 700, { pose: 'point', h: 230, flip: true });
       var round = 1;
       var running = false;
       var yawned = false;
@@ -20,17 +20,32 @@
       var chips = [];
 
       var ink = scene.add.graphics().setDepth(8);
-      var turtle = makeTurtle(scene, 700, 430);
-      var home = { x: 700, y: 430 };
+      var turtle = makeTurtle(scene, 630, 360);
+      var home = { x: 630, y: 360 };
 
-      var runBtn = Island.ui.button(scene, 1140, 630, 200, 72, '▶ 走', function () { go(); }, { states: ['PLAY'] });
+      var runBtn = Island.ui.button(scene, 980, 640, 180, 72, '运行', function () { go(); }, { states: ['PLAY'] });
+      runBtn.add(scene.add.image(-46, -2, 'icon-play-white').setDisplaySize(30, 30));
       runBtn.setDepth(20);
 
       var slotLayer = scene.add.container(0, 0);
       var controls = scene.add.container(0, 0).setVisible(false);
-      var repText = scene.add.text(420, 630, '3 次', Island.style(28, '#4A3222', false)).setOrigin(0.5);
-      var degText = scene.add.text(820, 630, '90°', Island.style(28, '#4A3222', false)).setOrigin(0.5);
-      controls.add([repText, degText]);
+      var panel = Island.ui.panel(scene, 560, 640, 700, 180);
+      panel.setVisible(false);
+      var repText = scene.add.text(560, 600, '3', Island.style(38)).setOrigin(0.5);
+      var degText = scene.add.text(560, 668, '90°', Island.style(38)).setOrigin(0.5);
+      var repWell = scene.add.image(560, 600, 'ui-value-well').setDisplaySize(150, 64);
+      var degWell = scene.add.image(560, 668, 'ui-value-well').setDisplaySize(150, 64);
+      var frame = scene.add.graphics();
+      frame.lineStyle(5, 0x6FB7D6, 1);
+      frame.strokeRoundedRect(210, 544, 700, 192, 32);
+      var badge = scene.add.image(232, 562, 'ui-slot-no').setDisplaySize(36, 36);
+      var badgeN = scene.add.text(232, 562, '1', Island.style(18, '#FFF8EE')).setOrigin(0.5);
+      controls.add([panel, frame, badge, badgeN, repWell, degWell, repText, degText]);
+      controls.add([
+        scene.add.text(300, 600, '重复', Island.style(32)).setOrigin(0, 0.5),
+        scene.add.text(300, 668, '右转', Island.style(32)).setOrigin(0, 0.5),
+        scene.add.text(650, 600, '次', Island.style(30)).setOrigin(0, 0.5)
+      ]);
 
       function bump(obj) {
         if (Island.MOTION.calm) return;
@@ -39,7 +54,7 @@
       }
       function setRep(n) {
         reps = Phaser.Math.Clamp(n, 1, 6);
-        repText.setText(reps + ' 次');
+        repText.setText(String(reps));
         bump(repText);
         Island.sfx.play('click');
         arm();
@@ -56,18 +71,10 @@
         arm();
       }
 
-      var minusR = Island.ui.button(scene, 300, 630, 72, 64, '－', function () { setRep(reps - 1); }, {
-        states: ['PLAY'], face: P.wood, deep: P.woodDeep, hot: 0xC48A55, font: 32
-      });
-      var plusR = Island.ui.button(scene, 540, 630, 72, 64, '＋', function () { setRep(reps + 1); }, {
-        states: ['PLAY'], face: P.wood, deep: P.woodDeep, hot: 0xC48A55, font: 32
-      });
-      var minusD = Island.ui.button(scene, 700, 630, 72, 64, '－', function () { setDeg(-1); }, {
-        states: ['PLAY'], face: P.wood, deep: P.woodDeep, hot: 0xC48A55, font: 32
-      });
-      var plusD = Island.ui.button(scene, 940, 630, 72, 64, '＋', function () { setDeg(1); }, {
-        states: ['PLAY'], face: P.wood, deep: P.woodDeep, hot: 0xC48A55, font: 32
-      });
+      var minusR = Island.ui.round(scene, 470, 600, 'minus', function () { setRep(reps - 1); }, { states: ['PLAY'] });
+      var plusR = Island.ui.round(scene, 650, 600, 'plus', function () { setRep(reps + 1); }, { states: ['PLAY'] });
+      var minusD = Island.ui.round(scene, 470, 668, 'minus', function () { setDeg(-1); }, { states: ['PLAY'] });
+      var plusD = Island.ui.round(scene, 650, 668, 'plus', function () { setDeg(1); }, { states: ['PLAY'] });
       controls.add([minusR, plusR, minusD, plusD]);
       controls.setDepth(20);
 
@@ -82,12 +89,12 @@
       }
       function addSlot(x, y) {
         var s = scene.add.container(x, y).setDepth(12);
-        var r = scene.add.rectangle(0, 0, 108, 64, P.cream).setStrokeStyle(4, P.ink);
-        var n = scene.add.text(0, 0, String(slots.length + 1), Island.style(22, '#8C6950', false)).setOrigin(0.5);
+        var r = scene.add.image(0, 0, 'ui-slot-empty').setDisplaySize(120, 100);
+        var n = scene.add.text(0, 0, String(slots.length + 1), Island.style(22, '#8C6950')).setOrigin(0.5);
         s.add([r, n]);
         s.card = null;
         s.index = slots.length;
-        s.setSize(108, 64);
+        s.setSize(120, 100);
         s._bsx = 1;
         s._bsy = 1;
         slots.push(s);
@@ -113,13 +120,16 @@
       }
       function chip(kind, x, y) {
         var label = kind === 'F' ? '前进' : kind === 'R' ? '右转' : '重复';
-        var fill = kind === 'F' ? 0xC5D7B4 : kind === 'R' ? 0xF6C9A0 : P.star;
         var c = scene.add.container(x, y).setDepth(18);
-        var bg = scene.add.rectangle(0, 0, kind === 'L' ? 140 : 100, 60, fill).setStrokeStyle(4, P.ink);
-        var text = scene.add.text(0, 0, label, Island.style(22, '#4A3222', false)).setOrigin(0.5);
-        c.add([bg, text]);
+        var bg = scene.add.image(0, 0, 'ui-card-blank').setDisplaySize(kind === 'L' ? 150 : 120, kind === 'L' ? 150 : 96);
+        var icon = scene.add.image(0, kind === 'L' ? -16 : -8, kind === 'R' ? 'icon-back' : 'icon-play');
+        icon.setDisplaySize(36, 36);
+        if (kind === 'F') icon.setAngle(-90);
+        if (kind === 'R') icon.setFlipX(true);
+        var text = scene.add.text(0, kind === 'L' ? 40 : 28, label, Island.style(22)).setOrigin(0.5);
+        c.add([bg, icon, text]);
         c.kind = kind;
-        c.setSize(kind === 'L' ? 140 : 100, 60);
+        c.setSize(kind === 'L' ? 150 : 120, kind === 'L' ? 150 : 96);
         chips.push(c);
         return c;
       }
@@ -175,7 +185,16 @@
             scene.lucky.say(cfg.bubbles.tired);
           }
         }
-        if (round === 2) controls.setVisible(true);
+        if (round === 2) {
+          controls.setVisible(true);
+          panel.setVisible(true);
+          if (slots[0] && slots[0].card) {
+            slots[0].card.setVisible(false);
+            slots[0].setVisible(false);
+          }
+          tray.forEach(function (t) { t.setVisible(false); });
+          if (scene.lucky) scene.lucky.say('几条边？数一数');
+        }
         arm();
       }
       function fillSquare() {
@@ -209,7 +228,7 @@
           api.setStep({
             goal: goal,
             hint: cfg.hints.tri,
-            demo: function () { reps = 3; deg = 120; repText.setText('3 次'); degText.setText('120°'); }
+            demo: function () { reps = 3; deg = 120; repText.setText('3'); degText.setText('120°'); }
           });
         }
       }
@@ -226,7 +245,7 @@
         var x1 = x0 + Math.cos(a) * STEP;
         var y1 = y0 + Math.sin(a) * STEP;
         if (Island.MOTION.calm) {
-          ink.lineStyle(6, P.woodDeep, 1);
+          ink.lineStyle(14, 0xA8703F, 0.9);
           ink.beginPath();
           ink.moveTo(x0, y0);
           ink.lineTo(x1, y1);
@@ -244,7 +263,7 @@
           onUpdate: function () {
             var x = x0 + (x1 - x0) * proxy.t;
             var y = y0 + (y1 - y0) * proxy.t;
-            ink.lineStyle(6, P.woodDeep, 1);
+            ink.lineStyle(14, 0xA8703F, 0.9);
             ink.beginPath();
             ink.moveTo(last.x, last.y);
             ink.lineTo(x, y);
@@ -349,7 +368,7 @@
             scene.coach.demo = function () {
               reps = 3;
               deg = 120;
-              repText.setText('3 次');
+              repText.setText('3');
               degText.setText('120°');
             };
             api.miss(cfg.bubbles.close);
@@ -360,6 +379,11 @@
       function startRepeat() {
         round = 2;
         api.setTask(cfg.tasks[1]);
+        if (scene.lucky) {
+          scene.lucky.setLook({ pose: 'point', h: 230, flip: false });
+          scene.lucky.say('几条边？数一数');
+        }
+        resetTurtle();
         tray.forEach(function (t) { t.setVisible(false); t.disableInteractive(); });
         board1();
         controls.setVisible(false);
@@ -410,13 +434,12 @@
 
   function makeTurtle(scene, x, y) {
     var t = scene.add.container(x, y).setDepth(15);
-    var tail = scene.add.ellipse(-24, 0, 14, 10, P.sageDeep);
-    var shell = scene.add.ellipse(0, 0, 56, 42, P.sage).setStrokeStyle(4, P.ink);
-    var head = scene.add.circle(28, 0, 12, 0x6E9A62).setStrokeStyle(3, P.ink);
-    var eye = scene.add.circle(32, -3, 3, P.ink);
-    t.add([tail, shell, head, eye]);
+    var img = scene.add.image(0, 0, 'prop-turtle');
+    img.setDisplaySize(118, 124);
+    img.setAngle(90);
+    t.add(img);
     t.setRotation(-Math.PI / 2);
-    t.setSize(70, 50);
+    t.setSize(120, 120);
     return t;
   }
 })();

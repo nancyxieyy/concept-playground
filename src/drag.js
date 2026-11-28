@@ -138,7 +138,8 @@
           obj._depth0 = obj.depth || 0;
           obj.setDepth(200);
           Island.sfx.play('lift');
-          scene.input.setDefaultCursor('grabbing');
+          var grab = Island.PACK && Island.PACK['ui-cursor-grab'];
+          scene.input.setDefaultCursor(grab ? 'url("' + grab + '") 16 16, grabbing' : 'grabbing');
           if (obj.input) obj.input.cursor = 'grabbing';
           breathe(true);
           if (opt.onLift) opt.onLift(obj);

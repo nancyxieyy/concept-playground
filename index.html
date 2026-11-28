@@ -6,8 +6,11 @@
 <link rel="icon" href="data:,">
 <title>电脑小岛</title>
 <style>
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #3A2618; }
-  #game { position: fixed; inset: 0; }
+  @font-face { font-family: ZK; src: url("assets/ui-v1/fonts/ZCOOLKuaiLe-Regular.ttf"); font-display: block; }
+  @font-face { font-family: NotoSC; font-weight: 400; src: url("assets/ui-v1/fonts/NotoSansCJKsc-Regular-subset.woff2"); font-display: block; }
+  @font-face { font-family: NotoSC; font-weight: 700; src: url("assets/ui-v1/fonts/NotoSansCJKsc-Bold-subset.woff2"); font-display: block; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #8FD0EA; }
+  #game { position: fixed; inset: 0; overflow: hidden; }
   canvas { display: block; }
 </style>
 </head>
@@ -16,6 +19,7 @@
 <noscript>请打开 JavaScript 后再玩。</noscript>
 <script src="vendor/phaser.min.js"></script>
 <script src="src/config.js"></script>
+<script src="src/pack.js"></script>
 <script src="src/store.js"></script>
 <script src="src/sfx.js"></script>
 <script src="src/fx.js"></script>

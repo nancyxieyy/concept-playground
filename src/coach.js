@@ -60,7 +60,7 @@
           if (c.goal) Island.fx.halo(scene, c.goal);
           if (scene.lucky) {
             scene.lucky.confused();
-            scene.lucky.say(c.hintLine || text, 'hint', 1600);
+            scene.lucky.say(text || c.hintLine);
           }
           return 'hint';
         }

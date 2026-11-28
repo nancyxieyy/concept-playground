@@ -57,16 +57,42 @@
     };
   }
 
+  function clampZoom(z) {
+    var maxZ = Island.ZOOM_MAX || 1.6;
+    if (z > maxZ) z = maxZ;
+    if (z < 1) z = 1;
+    return z;
+  }
+
+  function clampCenter(cam, x, y, z) {
+    var W = Island.DESIGN.w;
+    var H = Island.DESIGN.h;
+    var vw = cam.width / z;
+    var vh = cam.height / z;
+    return {
+      x: vw >= W ? W / 2 : Math.max(vw / 2, Math.min(W - vw / 2, x)),
+      y: vh >= H ? H / 2 : Math.max(vh / 2, Math.min(H - vh / 2, y))
+    };
+  }
+
+  function placeCam(cam, x, y, z) {
+    z = clampZoom(z);
+    var c = clampCenter(cam, x, y, z);
+    cam.setZoom(z);
+    cam.centerOn(c.x, c.y);
+  }
+
   function glide(scene, zoom, cx, cy, dur, ease, onDone) {
     if (!scene || !scene.cameras) return;
     var cam = scene.cameras.main;
+    zoom = clampZoom(zoom);
+    var mid = { x: Island.DESIGN.w / 2, y: Island.DESIGN.h / 2 };
     if (Island.MOTION.calm) {
-      cam.setZoom(1);
-      cam.centerOn(640, 360);
+      placeCam(cam, mid.x, mid.y, 1);
       if (scene.time) scene.time.delayedCall(Math.min(dur || 150, 150), function () { if (onDone) onDone(); });
       return;
     }
-    var fromZ = cam.zoom;
+    var fromZ = cam.zoom || 1;
     var from = camCenter(cam);
     var state = { zoom: fromZ };
     scene.tweens.add({
@@ -76,15 +102,14 @@
       ease: ease || 'Cubic.easeInOut',
       onUpdate: function (tween) {
         var p = tween && typeof tween.progress === 'number' ? tween.progress : 1;
-        var z = state.zoom;
-        if (z < 0.2) z = 0.2;
+        var z = clampZoom(state.zoom);
+        var c = clampCenter(cam, from.x + (cx - from.x) * p, from.y + (cy - from.y) * p, z);
         cam.setZoom(z);
-        cam.centerOn(from.x + (cx - from.x) * p, from.y + (cy - from.y) * p);
+        cam.centerOn(c.x, c.y);
       },
       onComplete: function () {
         if (!scene.sys || !scene.sys.isActive()) return;
-        cam.setZoom(zoom);
-        cam.centerOn(cx, cy);
+        placeCam(cam, cx, cy, zoom);
         if (onDone) onDone();
       }
     });
@@ -135,6 +160,7 @@
     glide: glide,
     pin: pin,
     camCenter: camCenter,
+    placeCam: placeCam,
 
     textures: function (scene) {
       function g() { return scene.make.graphics({ add: false }); }
@@ -202,7 +228,8 @@
     },
 
     stars: function (scene, x, y, n) {
-      burst(scene, x, y, 'fx-star', n || 8, { min: 60, max: 120, dur: 500, scale: 0.45 });
+      var key = scene.textures.exists('prop-star-lit') ? 'prop-star-lit' : 'fx-star';
+      burst(scene, x, y, key, n || 8, { min: 50, max: 110, dur: 500, scale: key === 'prop-star-lit' ? 0.16 : 0.45 });
     },
 
     dust: function (scene, x, y) {
@@ -211,7 +238,7 @@
 
     confetti: function (scene, x, y) {
       if (!alive(scene) || Island.MOTION.calm) return;
-      var colors = [0xF08A24, 0xFFD34D, 0x8FB58A, 0xF6A58F, 0x7EC4EE, 0xFFF4E0];
+      var colors = [0xF08A24, 0xBFE6CF, 0xFFE3D3, 0x6FB7D6, 0xF7CF6B, 0xF6A96B, 0x8FB58A];
       for (var i = 0; i < 30; i++) {
         var s = scene.add.image(x, y, 'fx-conf');
         s.setTint(colors[i % colors.length]);
@@ -235,18 +262,20 @@
     halo: function (scene, obj) {
       if (!alive(scene) || !obj || !obj.getBounds) return null;
       var b = obj.getBounds();
-      var ring = scene.add.ellipse(b.centerX, b.centerY, Math.max(80, b.width + 28), Math.max(80, b.height + 28));
-      ring.setStrokeStyle(8, 0xFFE9A8, 1);
-      ring.setFillStyle(0xFFE9A8, 0.18);
+      var ring = scene.textures.exists('ui-halo-yellow')
+        ? scene.add.image(b.centerX, b.centerY, 'ui-halo-yellow').setDisplaySize(Math.max(180, b.width + 36), Math.max(180, b.height + 36))
+        : scene.add.ellipse(b.centerX, b.centerY, Math.max(80, b.width + 28), Math.max(80, b.height + 28)).setStrokeStyle(8, 0xFFE9A8, 1).setFillStyle(0xFFE9A8, 0.18);
       ring.setDepth((obj.depth || 10) + 1);
+      var sx = ring.scaleX || 1;
+      var sy = ring.scaleY || 1;
       if (Island.MOTION.calm) {
         scene.time.delayedCall(1200, function () { ring.destroy(); });
         return ring;
       }
       scene.tweens.add({
         targets: ring,
-        scaleX: 1.15,
-        scaleY: 1.15,
+        scaleX: sx * 1.15,
+        scaleY: sy * 1.15,
         duration: 400,
         yoyo: true,
         repeat: 2,
@@ -303,10 +332,11 @@
     },
 
     pop: function (scene, obj, delay, base) {
-      base = base || 1;
       if (!obj) return;
+      var bx = obj._bsx != null ? obj._bsx : (obj.scaleX > 0.01 ? obj.scaleX : (base || 1));
+      var by = obj._bsy != null ? obj._bsy : (obj.scaleY > 0.01 ? obj.scaleY : (base || 1));
       obj.setScale(0);
-      tween(scene, obj, { scaleX: base, scaleY: base }, {
+      tween(scene, obj, { scaleX: bx, scaleY: by }, {
         dur: 240,
         delay: delay || 0,
         ease: 'Back.easeOut'

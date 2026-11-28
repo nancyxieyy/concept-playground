@@ -1,216 +1,106 @@
-/* 木牌、圆按钮、气泡和概念卡。画面上的字都从这里出来。 */
+/* 软糖界面：九宫格按钮、任务牌、气泡、星豆。按下立刻有反馈。 */
 (function () {
   'use strict';
   var Island = window.Island;
-  var P = Island.PAL;
-
-  function wood(g, x, y, w, h, fill, deep, radius) {
-    var r = radius == null ? 16 : radius;
-    g.fillStyle(deep, 1);
-    g.fillRoundedRect(x, y + 6, w, h, r);
-    g.fillStyle(fill, 1);
-    g.fillRoundedRect(x, y, w, h, r);
-    g.lineStyle(4, P.ink, 1);
-    g.strokeRoundedRect(x, y, w, h, r);
-    g.fillStyle(0xffffff, 0.22);
-    g.fillRoundedRect(x + 10, y + 6, Math.max(12, w * 0.38), Math.max(8, h * 0.22), 8);
-  }
-
-  function markInput() {
-    if (!Island.DEBUG) return;
-    Island._inAt = performance.now();
-  }
-  function markVisual() {
-    if (!Island.DEBUG || !Island._inAt) return;
-    var t0 = Island._inAt;
-    Island._inAt = 0;
-    requestAnimationFrame(function () {
-      console.log('pointerdown → 视觉 ' + (performance.now() - t0).toFixed(1) + 'ms');
-    });
-  }
 
   function can(states) {
-    if (Island.state === 'TRANSITION') return false;
-    if (!states) return Island.state === 'IDLE' || Island.state === 'PLAY' || Island.state === 'MODAL';
+    if (!states || !states.length) return true;
     return states.indexOf(Island.state) >= 0;
   }
 
-  function bindPress(scene, obj, opt) {
-    var restX = obj.scaleX || 1;
-    var restY = obj.scaleY || 1;
-    var lift = opt.lift !== false;
-    obj._restY = obj.y;
-    obj.on('pointerover', function () {
-      if (!can(opt.states)) return;
-      Island.sfx.hover(opt.key || obj.name || 'ui');
-      markVisual();
-      var s = Island.MOTION.calm ? 1.03 : 1.06;
-      obj.setScale(restX * s, restY * s);
-      if (lift && !Island.MOTION.calm) obj.y = obj._restY - 4;
-    });
-    obj.on('pointerout', function () {
-      obj.setScale(restX, restY);
-      if (lift) obj.y = obj._restY;
-    });
-    obj.on('pointerdown', function (pointer) {
-      if (!can(opt.states)) return;
-      markInput();
-      Island.sfx.play('press');
-      obj.setScale(restX * 0.92, restY * 0.92);
-      if (lift) obj.y = obj._restY + 4;
-      markVisual();
-      obj._pressed = true;
-      obj._px = pointer.worldX;
-      obj._py = pointer.worldY;
-    });
-    obj.on('pointerup', function (pointer) {
-      if (!obj._pressed) return;
-      obj._pressed = false;
-      if (!can(opt.states)) {
-        obj.setScale(restX, restY);
-        obj.y = obj._restY;
-        return;
-      }
-      Island.sfx.play('click');
-      Island.fx.ring(scene, pointer.worldX, pointer.worldY);
-      Island.fx.sparks(scene, pointer.worldX, pointer.worldY, 5);
-      obj.y = obj._restY;
-      if (Island.MOTION.calm) obj.setScale(restX, restY);
-      else {
-        obj.setScale(restX * 1.08, restY * 1.08);
-        Island.fx.tween(scene, obj, { scaleX: restX, scaleY: restY }, { dur: 180, ease: 'Back.easeOut' });
-      }
-      if (opt.onClick) opt.onClick(pointer);
-    });
+  function markInput() {
+    if (Island.DEBUG) Island._inAt = performance.now();
   }
 
-  function roundIcon(g, kind, muted) {
-    g.clear();
-    if (kind === 'home') {
-      g.fillStyle(P.cream, 1);
-      g.fillTriangle(0, -16, -16, 0, 16, 0);
-      g.lineStyle(3, P.ink, 1);
-      g.strokeTriangle(0, -16, -16, 0, 16, 0);
-      g.fillStyle(P.cream, 1);
-      g.fillRoundedRect(-11, -2, 22, 16, 3);
-      g.lineStyle(3, P.ink, 1);
-      g.strokeRoundedRect(-11, -2, 22, 16, 3);
-    } else if (kind === 'hint') {
-      g.fillStyle(P.star, 1);
-      g.fillCircle(0, -4, 12);
-      g.lineStyle(3, P.ink, 1);
-      g.strokeCircle(0, -4, 12);
-      g.fillStyle(P.ink, 1);
-      g.fillRoundedRect(-4, 8, 8, 6, 2);
-      g.fillStyle(P.cream, 1);
-      g.fillCircle(-4, -8, 3);
-    } else {
-      g.fillStyle(P.cream, 1);
-      g.fillRoundedRect(-14, -8, 10, 16, 2);
-      g.fillTriangle(-4, -8, -4, 8, 12, 14);
-      g.fillTriangle(-4, -8, -4, 8, 12, -14);
-      g.lineStyle(3, P.ink, 1);
-      g.strokeRoundedRect(-14, -8, 10, 16, 2);
-      if (muted) {
-        g.lineStyle(4, P.ink, 1);
-        g.beginPath();
-        g.moveTo(-12, -12);
-        g.lineTo(14, 14);
-        g.strokePath();
-      }
+  function markVisual() {
+    if (Island.DEBUG && Island._inAt) {
+      var t0 = Island._inAt;
+      Island._inAt = 0;
+      requestAnimationFrame(function () {
+        console.log('pointerdown → 视觉 ' + (performance.now() - t0).toFixed(1) + 'ms');
+      });
     }
   }
 
+  function slice(scene, key, x, y, w, h, inset) {
+    var s = scene.add.nineslice(x, y, key, null, Math.max(inset * 4, w * 2), Math.max(inset * 4, h * 2), inset * 2, inset * 2, inset * 2, inset * 2);
+    s.setScale(0.5);
+    return s;
+  }
+
+  function hand(obj, scene, states, onClick, home) {
+    obj.setInteractive({
+      hitArea: Island.hit.rect(obj, obj.width, obj.height),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
+    obj.on('pointerover', function () {
+      if (!can(states)) return;
+      Island.sfx.hover(obj._key || 'ui');
+      if (!Island.MOTION.calm) {
+        obj.y = home.y - 4;
+        obj.setScale(1.04);
+      }
+    });
+    obj.on('pointerout', function () {
+      obj.y = home.y;
+      obj.setScale(1);
+    });
+    obj.on('pointerdown', function () {
+      if (!can(states)) return;
+      markInput();
+      Island.sfx.play('press');
+      obj.y = home.y + 5;
+      obj.setScale(0.98);
+      obj._down = true;
+      markVisual();
+    });
+    obj.on('pointerup', function (p) {
+      if (!obj._down) return;
+      obj._down = false;
+      obj.y = home.y;
+      obj.setScale(1);
+      if (!can(states)) return;
+      Island.sfx.play('click');
+      Island.fx.ring(scene, p.worldX, p.worldY);
+      Island.fx.sparks(scene, p.worldX, p.worldY, 4);
+      if (onClick) onClick();
+    });
+  }
+
   Island.ui = {
-    wood: wood,
+    slice: slice,
 
     stage: function (scene) {
-      scene.hud = scene.add.container(0, 0);
-      scene.hud.setDepth(1000);
-      scene.hudNudge = 0;
-      scene.flash = scene.add.rectangle(640, 360, 1280, 720, P.cream, 1);
-      scene.flash.setDepth(3000);
-      scene.flash.setAlpha(0);
-      var zone = scene.add.zone(640, 360, 4200, 2800);
-      zone.setDepth(-100);
-      zone.setInteractive();
+      var zone = scene.add.zone(Island.DESIGN.w / 2, Island.DESIGN.h / 2, Island.DESIGN.w, Island.DESIGN.h).setDepth(-100);
+      zone.setInteractive({ useHandCursor: false });
       zone.on('pointerdown', function (p) {
-        if (Island.state !== 'IDLE' && Island.state !== 'PLAY') return;
+        if (Island.state !== 'PLAY' && Island.state !== 'IDLE') return;
+        markInput();
         Island.sfx.play('press');
+        markVisual();
         Island.fx.ring(scene, p.worldX, p.worldY);
       });
       scene.backZone = zone;
+      scene.hud = scene.add.container(0, 0).setDepth(1000);
+      scene.hudNudge = 0;
+      scene.flash = scene.add.rectangle(Island.DESIGN.w / 2, Island.DESIGN.h / 2, 1800, 1200, 0xFFF4E0, 1);
+      scene.flash.setDepth(3000);
+      scene.flash.setAlpha(0);
     },
 
     button: function (scene, x, y, w, h, label, onClick, opt) {
       opt = opt || {};
-      var face = opt.face == null ? P.orange : opt.face;
-      var deep = opt.deep == null ? P.orangeDeep : opt.deep;
-      var hot = opt.hot == null ? P.orangeHot : opt.hot;
+      var secondary = opt.kind === 'secondary' || (opt.face != null && opt.face !== 0xF08A24);
+      var key = secondary ? 'ui-btn-secondary' : 'ui-btn-primary';
       var c = scene.add.container(x, y);
-      var g = scene.add.graphics();
-      var text = scene.add.text(0, -2, label, Island.style(opt.font || 30, '#FFF4E0')).setOrigin(0.5);
-      c.add([g, text]);
-      function paint(fill, pressed) {
-        g.clear();
-        var r = 16;
-        if (!pressed) {
-          g.fillStyle(deep, 1);
-          g.fillRoundedRect(-w / 2, -h / 2 + 6, w, h, r);
-        }
-        var oy = pressed ? 4 : 0;
-        g.fillStyle(fill, 1);
-        g.fillRoundedRect(-w / 2, -h / 2 + oy, w, h, r);
-        g.lineStyle(4, P.ink, 1);
-        g.strokeRoundedRect(-w / 2, -h / 2 + oy, w, h, r);
-        g.fillStyle(0xffffff, 0.24);
-        g.fillRoundedRect(-w / 2 + 12, -h / 2 + 8 + oy, Math.min(80, w * 0.36), 12, 6);
-      }
-      paint(face, false);
-      c.setSize(w, h + 6);
-      c.setInteractive({
-        hitArea: Island.hit.rect(c, w, h + 8),
-        hitAreaCallback: Phaser.Geom.Rectangle.Contains,
-        useHandCursor: true
-      });
-      c.on('pointerover', function () {
-        if (!can(opt.states)) return;
-        Island.sfx.hover(label);
-        paint(hot, false);
-        if (!Island.MOTION.calm) c.y = y - 4;
-        c.setScale(Island.MOTION.calm ? 1.02 : 1.06);
-      });
-      c.on('pointerout', function () {
-        paint(face, false);
-        c.y = y;
-        c.setScale(1);
-      });
-      c.on('pointerdown', function () {
-        if (!can(opt.states)) return;
-        markInput();
-        Island.sfx.play('press');
-        paint(face, true);
-        c.setScale(0.92);
-        c.y = y + 2;
-        markVisual();
-        c._down = true;
-      });
-      c.on('pointerup', function (pointer) {
-        if (!c._down) return;
-        c._down = false;
-        paint(face, false);
-        c.y = y;
-        c.setScale(1);
-        if (!can(opt.states)) return;
-        Island.sfx.play('click');
-        Island.fx.ring(scene, pointer.worldX, pointer.worldY);
-        Island.fx.sparks(scene, pointer.worldX, pointer.worldY, 4);
-        if (!Island.MOTION.calm) {
-          c.setScale(1.08);
-          Island.fx.tween(scene, c, { scaleX: 1, scaleY: 1 }, { dur: 180, ease: 'Back.easeOut' });
-        }
-        if (onClick) onClick();
-      });
+      var face = slice(scene, key, 0, 0, w, h || (secondary ? 60 : 72), secondary ? 36 : 46);
+      var text = scene.add.text(0, -2, label, Island.style(opt.font || (secondary ? 26 : 32), secondary ? '#4A3222' : '#FFF8EE')).setOrigin(0.5);
+      if (!secondary) text.setShadow(0, 2, '#C46A12', 0, true, true);
+      c.add([face, text]);
+      c.setSize(w, (h || 72) + 8);
+      c._key = label;
+      hand(c, scene, opt.states, onClick, { x: x, y: y });
       c.setLabel = function (s) { text.setText(s); };
       return c;
     },
@@ -218,186 +108,231 @@
     round: function (scene, x, y, kind, onClick, opt) {
       opt = opt || {};
       var c = scene.add.container(x, y);
-      var shadow = scene.add.ellipse(0, 8, 52, 16, P.ink, 0.25);
-      var disc = scene.add.circle(0, 0, 32, P.wood);
-      disc.setStrokeStyle(4, P.ink);
-      var icon = scene.add.graphics();
-      c.add([shadow, disc, icon]);
-      c._muted = false;
-      function paint() { roundIcon(icon, kind, c._muted); }
-      paint();
-      c.setSize(64, 64);
-      c.setInteractive({
-        hitArea: Island.hit.circle(c, 34),
-        hitAreaCallback: Phaser.Geom.Circle.Contains,
-        useHandCursor: true
-      });
-      bindPress(scene, c, {
-        states: opt.states,
-        key: kind,
-        onClick: function () { if (onClick) onClick(c); }
-      });
-      c.setMutedIcon = function (m) { c._muted = !!m; paint(); };
-      c.disc = disc;
+      var plateKey = kind === 'hint' ? 'ui-ibtn-hint' : 'ui-ibtn-cream';
+      var plate = scene.add.image(0, 2, plateKey).setDisplaySize(84, 84);
+      var iconName = kind === 'hint' ? 'icon-bulb' : kind === 'back' ? 'icon-back' : kind === 'plus' ? 'icon-plus' : kind === 'minus' ? 'icon-minus' : 'icon-speaker';
+      var icon = scene.add.image(0, -2, iconName).setDisplaySize(36, 36);
+      c.add([plate, icon]);
+      c.setSize(64, 70);
+      c._key = kind;
+      hand(c, scene, opt.states, onClick, { x: x, y: y });
+      c.setMutedIcon = function (muted) {
+        if (kind !== 'speaker') return;
+        icon.setTexture(muted ? 'icon-speaker_off' : 'icon-speaker');
+      };
       return c;
     },
 
-    task: function (scene, x, y) {
-      var c = scene.add.container(x, y);
-      var g = scene.add.graphics();
-      var t = scene.add.text(0, -2, '', Island.style(30)).setOrigin(0.5);
-      var mark = scene.add.text(0, -2, '✓', Island.style(28, '#FFF4E0')).setOrigin(0.5);
-      mark.setVisible(false);
-      c.add([g, t, mark]);
-      c.setText = function (text) {
-        Island.assertCopy('任务', text, 15);
-        t.setText(text);
-        mark.setVisible(false);
-        t.setVisible(true);
-        var w = Math.min(640, Math.max(240, t.width + 72));
-        g.clear();
-        wood(g, -w / 2, -32, w, 64, P.wood, P.woodDeep, 16);
-        c._w = w;
+    task: function (scene) {
+      var c = scene.add.container(640, 78);
+      var bar = scene.add.image(0, -52, 'ui-task-bar').setDisplaySize(360, 18);
+      var ropeL = scene.add.rectangle(-78, -36, 3, 16, 0xD9C29A);
+      var ropeR = scene.add.rectangle(78, -36, 3, 16, 0xD9C29A);
+      var plate = slice(scene, 'ui-task-plate-9slice', 0, 0, 360, 74, 40);
+      var text = scene.add.text(0, 0, '', Island.style(34)).setOrigin(0.5);
+      var tick = scene.add.image(-150, 0, 'icon-check').setDisplaySize(28, 28).setVisible(false);
+      c.add([bar, ropeL, ropeR, plate, tick, text]);
+      c.setSize(420, 90);
+      c.setText = function (s) {
+        text.setText(s);
+        tick.setVisible(false);
+        var w = Math.max(300, Math.min(640, text.width + 96));
+        plate.setSize(w * 2, 148);
+        plate.setScale(0.5);
+        bar.setDisplaySize(Math.max(280, w * 0.72), 18);
+        ropeL.x = -w * 0.22;
+        ropeR.x = w * 0.22;
+        tick.x = -w / 2 + 36;
       };
       c.bump = function () {
+        tick.setVisible(true);
         if (Island.MOTION.calm) return;
-        c.setScale(1.08);
+        c.setScale(1.06);
         Island.fx.tween(scene, c, { scaleX: 1, scaleY: 1 }, { dur: 200, ease: 'Back.easeOut' });
       };
       return c;
     },
 
-    bubble: function (scene) {
-      var c = scene.add.container(0, 0);
-      c.setDepth(60);
-      var g = scene.add.graphics();
-      var t = scene.add.text(0, -6, '', Island.style(26, P.inkCss, false)).setOrigin(0.5);
-      c.add([g, t]);
-      c.setScale(0);
-      c.setVisible(false);
-      var timer = null;
-      function paint(tone) {
-        var w = Math.min(360, Math.max(96, t.width + 36));
-        var h = 58;
-        var fill = tone === 'hint' || tone === 'ask' ? P.hint : P.cream;
-        g.clear();
-        g.fillStyle(fill, 1);
-        g.fillRoundedRect(-w / 2, -h / 2 - 4, w, h, 16);
-        g.lineStyle(4, P.ink, 1);
-        g.strokeRoundedRect(-w / 2, -h / 2 - 4, w, h, 16);
-        g.fillStyle(fill, 1);
-        g.fillTriangle(-10, h / 2 - 8, 10, h / 2 - 8, 0, h / 2 + 10);
-        g.lineStyle(4, P.ink, 1);
-        g.strokeTriangle(-10, h / 2 - 8, 10, h / 2 - 8, 0, h / 2 + 10);
+    beads: function (scene, n) {
+      var c = scene.add.container(104, 52);
+      var groove = slice(scene, 'ui-groove-9slice', 70, 0, 168, 56, 28);
+      var dots = [];
+      for (var i = 0; i < n; i++) {
+        var d = scene.add.image(0, 0, 'ui-bead-todo').setDisplaySize(34, 34);
+        dots.push(d);
       }
-      c.show = function (x, y, text, tone, hold) {
-        Island.assertCopy('气泡', text, 12);
-        t.setText(text);
-        paint(tone || 'talk');
-        c.setPosition(x, y);
-        c.setVisible(true);
-        c.setScale(Island.MOTION.calm ? 1 : 0);
-        if (!Island.MOTION.calm) {
-          Island.fx.tween(scene, c, { scaleX: 1, scaleY: 1 }, { dur: 200, ease: 'Back.easeOut' });
+      var num = scene.add.text(0, 0, '1/' + n, Island.style(22, '#8C6950')).setOrigin(0, 0.5);
+      c.add([groove].concat(dots).concat([num]));
+      function layout(index) {
+        var gap = 42;
+        var left = 16;
+        for (var i = 0; i < dots.length; i++) {
+          dots[i].setTexture(i < index ? 'ui-bead-done' : i === index ? 'ui-bead-cur' : 'ui-bead-todo');
+          dots[i].setDisplaySize(i < index ? 36 : 34, i < index ? 36 : 34);
+          dots[i].x = left + i * gap;
         }
-        if (timer) timer.remove();
-        timer = scene.time.delayedCall(hold || 1600, function () { c.hide(); });
-      };
-      c.hide = function () {
-        if (!c.visible) return;
-        if (Island.MOTION.calm) { c.setVisible(false); return; }
-        Island.fx.tween(scene, c, { scaleX: 0, scaleY: 0 }, {
-          dur: 140,
-          ease: 'Quad.easeIn',
-          onComplete: function () { c.setVisible(false); }
-        });
-      };
+        num.x = left + dots.length * gap + 4;
+        num.setText((Math.min(index, n - 1) + 1) + '/' + n);
+        var w = num.x + num.width + 18;
+        groove.setPosition(w / 2, 0);
+        groove.setSize(w * 2, 112);
+        groove.setScale(0.5);
+      }
+      c.setIndex = function (i) { layout(i); };
+      layout(0);
       return c;
     },
 
-    stars: function (scene, x, y) {
+    beans: function (scene, x, y) {
       var c = scene.add.container(x, y);
-      var icon = scene.add.image(-28, 0, 'fx-star').setScale(0.55);
-      var t = scene.add.text(8, 0, '0', Island.style(32)).setOrigin(0, 0.5);
-      c.add([icon, t]);
-      c.setCount = function (n) { t.setText(String(n)); };
+      var plate = slice(scene, 'ui-pill-bean-9slice', 0, 0, 132, 64, 32);
+      var icon = scene.add.image(-36, -2, 'icon-bean').setDisplaySize(40, 40);
+      var text = scene.add.text(8, -2, '0', Island.style(30)).setOrigin(0, 0.5);
+      c.add([plate, icon, text]);
+      c.setSize(140, 70);
+      c.setCount = function (n) {
+        text.setText(String(n));
+        var w = Math.max(120, text.width + 96);
+        plate.setSize(w * 2, 128);
+        plate.setScale(0.5);
+        icon.x = -w / 2 + 28;
+        text.x = icon.x + 28;
+        c.setSize(w, 70);
+      };
       c.bump = function () {
-        Island.sfx.play('starIn');
         if (Island.MOTION.calm) return;
-        c.setScale(1.25);
+        c.setScale(1.18);
         Island.fx.tween(scene, c, { scaleX: 1, scaleY: 1 }, { dur: 160, ease: 'Back.easeOut' });
       };
       return c;
     },
 
-    concept: function (scene, cfg, count, onContinue) {
-      var root = scene.add.container(640, 340);
-      root.setScale(0.6);
-      root.setAlpha(0);
-      var g = scene.add.graphics();
-      wood(g, -300, -210, 600, 400, P.cream, P.wood, 24);
-      var title = scene.add.text(0, -140, cfg.concept.name, Island.style(44, P.inkCss, false)).setOrigin(0.5);
-      var line = scene.add.text(0, -70, cfg.concept.line, Island.style(26, P.inkCss, false)).setOrigin(0.5);
-      Island.assertCopy('概念', cfg.concept.line, 20);
-      root.add([g, title, line]);
+    stars: function (scene, x, y) {
+      return Island.ui.beans(scene, x, y);
+    },
+
+    tag: function (scene, x, y, label, kind, iconName) {
+      kind = kind || 'peach';
+      var key = 'ui-tag-' + (kind === 'file' ? 'cream' : kind) + '-9slice';
+      if (!scene.textures.exists(key)) key = 'ui-tag-cream-9slice';
+      var c = scene.add.container(x, y);
+      var h = kind === 'file' ? 38 : 44;
+      var plate = slice(scene, key, 0, 0, 120, h, 22);
+      var bits = [plate];
+      var tx = 0;
+      if (iconName) {
+        var ic = scene.add.image(-30, 0, iconName).setDisplaySize(26, 26);
+        bits.push(ic);
+        tx = 12;
+      }
+      var font = kind === 'file' ? 20 : 24;
+      var color = kind === 'cool' ? '#1F4F63' : kind === 'mint' ? '#2F6B4C' : '#4A3222';
+      var text = scene.add.text(tx, 0, label, kind === 'file' ? Island.bodyStyle(font, color) : Island.style(font, color)).setOrigin(0.5);
+      bits.push(text);
+      c.add(bits);
+      var w = Math.max(88, text.width + (iconName ? 70 : 40));
+      plate.setSize(w * 2, h * 2);
+      plate.setScale(0.5);
+      if (iconName) bits[1].x = -w / 2 + 24;
+      text.x = iconName ? 10 : 0;
+      c.setSize(w, h);
+      return c;
+    },
+
+    nametag: function (scene, x, y, label, kind) {
+      kind = kind || 'peach';
+      var key = kind === 'dim' ? 'ui-nametag-dim-9slice' : kind === 'mint' ? 'ui-nametag-mint-9slice' : 'ui-nametag-peach-9slice';
+      var c = scene.add.container(x, y);
+      var plate = slice(scene, key, 0, 0, 150, 46, 24);
+      var color = kind === 'dim' ? '#8C6950' : kind === 'mint' ? '#2F6B4C' : '#4A3222';
+      var text = scene.add.text(0, -1, label, Island.style(24, color)).setOrigin(0.5);
+      c.add([plate, text]);
+      var w = Math.max(120, text.width + 36);
+      plate.setSize(w * 2, 92);
+      plate.setScale(0.5);
+      c.setSize(w, 46);
+      c.setKind = function (next, nextLabel) {
+        var k = next === 'dim' ? 'ui-nametag-dim-9slice' : next === 'mint' ? 'ui-nametag-mint-9slice' : 'ui-nametag-peach-9slice';
+        plate.setTexture(k);
+        text.setColor(next === 'dim' ? '#8C6950' : next === 'mint' ? '#2F6B4C' : '#4A3222');
+        if (nextLabel) text.setText(nextLabel);
+      };
+      return c;
+    },
+
+    panel: function (scene, x, y, w, h) {
+      return slice(scene, 'ui-panel-9slice', x, y, w, h, 48);
+    },
+
+    bubble: function (scene, text, hint) {
+      var c = scene.add.container(0, 0);
+      var key = hint ? 'ui-bubble-hint-9slice' : 'ui-bubble-cream-9slice';
+      var tailKey = hint ? 'ui-bubble-tail-hint' : 'ui-bubble-tail-cream';
+      var plate = slice(scene, key, 0, 0, 220, 76, 36);
+      var bits = [plate];
+      var tx = 0;
+      if (hint) {
+        bits.push(scene.add.image(-70, 0, 'icon-bulb').setDisplaySize(36, 36));
+        tx = 16;
+      }
+      var label = scene.add.text(tx, 0, text, Island.bodyStyle(28)).setOrigin(0.5);
+      var tail = scene.add.image(0, 48, tailKey).setDisplaySize(32, 26);
+      bits.push(label, tail);
+      c.add(bits);
+      var w = Math.max(160, label.width + (hint ? 100 : 64));
+      plate.setSize(w * 2, 152);
+      plate.setScale(0.5);
+      if (hint) bits[1].x = -w / 2 + 32;
+      label.x = hint ? 14 : 0;
+      c.setSize(w, 90);
+      c.setScale(0);
+      return c;
+    },
+
+    concept: function (scene, cfg, stars, onContinue, onReplay) {
+      var root = scene.add.container(700, 410).setDepth(1100);
+      var scrim = scene.add.rectangle(-60, -10, 1800, 1200, 0x1E2A44, 0.45);
+      var panel = slice(scene, 'ui-panel-9slice', 0, 20, 600, 500, 48);
+      var tag = Island.ui.nametag(scene, 0, -230, cfg.name + ' · 过关', 'mint');
       var slots = [];
-      var total = Math.max(1, Math.min(3, count));
-      for (var i = 0; i < total; i++) {
-        var sx = (i - (total - 1) / 2) * 78;
-        var star = scene.add.image(sx, 20, 'fx-star');
-        star.setScale(0);
-        root.add(star);
+      for (var i = 0; i < 3; i++) {
+        var earned = i < stars;
+        var h = i === 1 ? 132 : 110;
+        var star = scene.add.image((i - 1) * 120, -120 + (i === 1 ? -16 : 0), earned ? 'prop-star-lit' : 'prop-star-dim');
+        star.setDisplaySize(h, h * 0.96);
+        star._earned = earned;
         slots.push(star);
       }
-      var btn = Island.ui.button(scene, 0, 130, 240, 72, '回小岛', onContinue, { states: ['MODAL'] });
-      root.add(btn);
+      var title = scene.add.text(0, 20, cfg.concept.name, Island.style(52)).setOrigin(0.5);
+      var line = scene.add.text(0, 86, cfg.concept.line, Island.bodyStyle(28, '#8C6950')).setOrigin(0.5);
+      var pill = Island.ui.beans(scene, 0, 156);
+      pill.setCount('+' + stars);
+      var beanLabel = scene.add.text(28, 156, '星豆', Island.style(26)).setOrigin(0, 0.5);
+      var again = Island.ui.button(scene, -110, 240, 180, 60, '再玩一次', onReplay, { kind: 'secondary', states: ['MODAL'] });
+      var next = Island.ui.button(scene, 120, 246, 200, 72, '回小岛', onContinue, { states: ['MODAL'] });
+      root.add([scrim, panel, tag, title, line, pill, beanLabel, again, next].concat(slots));
+      if (!Island.MOTION.calm) {
+        root.setScale(0.6);
+        Island.fx.tween(scene, root, { scaleX: 1, scaleY: 1 }, { dur: 420, ease: 'Back.easeOut' });
+      }
       scene.hud.add(root);
-      Island.fx.tween(scene, root, { alpha: 1, scaleX: 1, scaleY: 1 }, { dur: 420, ease: 'Back.easeOut' });
-      slots.forEach(function (star, i) {
-        scene.time.delayedCall(Island.MOTION.calm ? 40 : 280 + i * 300, function () {
-          if (!alive(scene)) return;
-          Island.sfx.play('star', i);
-          if (Island.MOTION.calm) { star.setScale(0.8); return; }
-          star.setScale(1.3, 0.6);
-          Island.fx.tween(scene, star, { scaleX: 0.82, scaleY: 0.82 }, { dur: 220, ease: 'Back.easeOut' });
-        });
-      });
       return { root: root, slots: slots };
     },
 
     decor: function (scene, obj, states) {
+      if (!obj || !obj.setInteractive) return;
       obj.setInteractive({ useHandCursor: true });
-      var sx = obj.scaleX || 1;
-      var sy = obj.scaleY || 1;
-      obj.on('pointerover', function () {
-        if (!can(states || ['IDLE', 'PLAY'])) return;
-        Island.sfx.hover('decor' + obj.x);
-        obj.setScale(sx * (Island.MOTION.calm ? 1.03 : 1.06));
-      });
-      obj.on('pointerout', function () { obj.setScale(sx, sy); });
-      obj.on('pointerdown', function (p) {
-        if (!can(states || ['IDLE', 'PLAY'])) return;
-        markInput();
+      obj.on('pointerdown', function () {
+        if (states && states.indexOf(Island.state) < 0) return;
         Island.sfx.play('press');
-        obj.setScale(sx * 0.92, sy * 0.92);
-        markVisual();
-        Island.fx.ring(scene, p.worldX, p.worldY);
-      });
-      obj.on('pointerup', function () {
-        obj.setScale(sx, sy);
-        if (!can(states || ['IDLE', 'PLAY'])) return;
-        Island.sfx.play('click');
         if (!Island.MOTION.calm) {
-          var a = obj.angle || 0;
-          Island.fx.tween(scene, obj, { angle: a + 8 }, {
-            dur: 90, yoyo: true, onComplete: function () { obj.angle = a; }
-          });
+          var s = obj.scaleX || 1;
+          obj.setScale(s * 1.06);
+          scene.tweens.add({ targets: obj, scaleX: s, scaleY: s, duration: 140, ease: 'Back.easeOut' });
         }
       });
-    }
-  };
+    },
 
-  function alive(scene) {
-    return !!(scene && scene.sys && scene.sys.isActive());
-  }
+    wood: function () {}
+  };
 })();

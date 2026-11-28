@@ -8,48 +8,53 @@
     create: function (scene, cfg) {
       var api = scene.api;
       var self = this;
-      api.placeLucky(1080, 610);
+      api.placeLucky(140, 745, { pose: 'carry', h: 250 });
       var round = 1;
       var view = 'desk';
       var held = null;
       var moved = false;
 
-      function box(x, y, w, h, fill, label) {
+      var desk = Island.ui.panel(scene, 670, 230, 620, 196);
+      desk.setDepth(6);
+      var deskTag = Island.ui.tag(scene, 430, 148, '桌面', 'peach', 'icon-house');
+      deskTag.setDepth(7);
+
+      function box(x, y, key, w, label) {
+        var probe = scene.add.image(0, 0, key);
+        var h = w * probe.height / probe.width;
+        probe.destroy();
         var c = scene.add.container(x, y).setDepth(10);
-        var shadow = scene.add.ellipse(0, h * 0.45, w * 0.75, 18, P.ink, 0.22);
-        var body = scene.add.rectangle(0, 6, w, h, fill).setStrokeStyle(4, P.ink);
-        var lid = scene.add.rectangle(0, -h * 0.42, w + 10, 24, P.woodDeep).setStrokeStyle(4, P.ink);
-        var text = scene.add.text(0, 14, label, Island.style(22, '#4A3222', false)).setOrigin(0.5);
-        c.add([shadow, body, lid, text]);
-        c.lid = lid;
+        var shadow = scene.add.ellipse(0, h * 0.42, w * 0.72, 18, 0x4A3222, 0.22);
+        var body = scene.add.image(0, 0, key).setDisplaySize(w, h);
+        var tag = Island.ui.tag(scene, 0, h * 0.48, label, 'cream');
+        c.add([shadow, body, tag]);
+        c.lid = { angle: 0 };
         c._bsx = 1;
         c._bsy = 1;
-        c.setSize(w, h + 10);
+        c.setSize(w, h);
         return c;
       }
 
-      var draw = box(300, 390, 168, 132, 0xC5D7B4, '画画');
-      var music = box(560, 400, 168, 132, 0xF6D98A, '音乐');
-      var works = box(860, 390, 196, 150, P.wood, '我的作品');
+      var draw = box(440, 560, 'prop-crate-peach', 220, '画画');
+      var music = box(734, 560, 'prop-crate-blue', 220, '音乐');
+      var works = box(1043, 548, 'prop-crate-mint', 250, '我的作品');
       var boxes = { draw: draw, music: music, works: works };
       draw.boxId = 'draw';
       music.boxId = 'music';
       works.boxId = 'works';
 
       var defs = [
-        { id: 'cat', label: '小猫.png', box: 'draw', x: 230, y: 600, icon: '🐱', color: 0xF6C9A0 },
-        { id: 'song', label: '生日歌.mp3', box: 'music', x: 430, y: 600, icon: '🎵', color: 0xFFE9A8 },
-        { id: 'story', label: '我的故事.txt', box: 'works', x: 640, y: 600, icon: '📄', color: 0xFFF4E0 },
-        { id: 'html', label: '接星星.html', box: 'works', x: 850, y: 600, icon: '🌐', color: 0xD5EEF8 }
+        { id: 'cat', label: '小猫.png', box: 'draw', x: 470, y: 214, key: 'prop-file-cat' },
+        { id: 'song', label: '生日歌.mp3', box: 'music', x: 590, y: 214, key: 'prop-file-music' },
+        { id: 'story', label: '我的故事.txt', box: 'works', x: 730, y: 214, key: 'prop-file-story' },
+        { id: 'html', label: '接星星.html', box: 'works', x: 870, y: 214, key: 'prop-file-game' }
       ];
       var items = defs.map(function (d) {
         var c = scene.add.container(d.x, d.y).setDepth(16);
-        var bg = scene.add.rectangle(0, 0, 156, 112, d.color).setStrokeStyle(4, P.ink);
-        var icon = scene.add.text(0, -18, d.icon, {
-          fontFamily: Island.EMOJI, fontSize: '34px', resolution: 2
-        }).setOrigin(0.5);
-        var label = scene.add.text(0, 30, d.label, Island.style(22, '#4A3222', false)).setOrigin(0.5);
-        c.add([bg, icon, label]);
+        var icon = scene.add.image(0, -8, d.key);
+        icon.setDisplaySize(96 * icon.width / icon.height, 96);
+        var label = Island.ui.tag(scene, 0, 62, d.label, 'file');
+        c.add([icon, label]);
         c.meta = d;
         c.placed = false;
         c.setSize(156, 112);
@@ -72,34 +77,29 @@
         return c;
       });
 
-      var inner = scene.add.container(0, 0).setDepth(12).setVisible(false);
-      var innerDraw = box(470, 420, 180, 140, 0xC5D7B4, '画画');
-      var decoy = scene.add.container(760, 430);
-      decoy.add([
-        scene.add.rectangle(0, 0, 150, 100, 0xFFF4E0).setStrokeStyle(4, P.ink),
-        scene.add.text(0, 0, '我的故事.txt', Island.style(22, '#4A3222', false)).setOrigin(0.5)
-      ]);
-      decoy.setSize(150, 100);
-      var cat = scene.add.container(640, 420).setVisible(false);
-      cat.add([
-        scene.add.rectangle(0, 0, 180, 140, 0xF6C9A0).setStrokeStyle(4, P.ink),
-        scene.add.text(0, -16, '🐱', { fontFamily: Island.EMOJI, fontSize: '48px', resolution: 2 }).setOrigin(0.5),
-        scene.add.text(0, 40, '小猫.png', Island.style(22, '#4A3222', false)).setOrigin(0.5)
-      ]);
-      cat.setSize(180, 140);
-      inner.add([innerDraw, decoy]);
-      cat.setDepth(16);
+      var inner = scene.add.container(640, 400).setDepth(12).setVisible(false);
+      var innerPanel = Island.ui.panel(scene, 0, 0, 560, 320);
+      var innerDraw = box(0, 40, 'prop-crate-peach', 200, '画画');
+      inner.add(innerPanel);
+      innerDraw.setPosition(0, 40);
+      inner.add(innerDraw);
+      var decoy = scene.add.container(180, 20);
+      var decoyImg = scene.add.image(0, -10, 'prop-file-story');
+      decoyImg.setDisplaySize(80, 80);
+      decoy.add([decoyImg, Island.ui.tag(scene, 0, 50, '我的故事.txt', 'file')]);
+      decoy.setSize(120, 120);
+      inner.add(decoy);
+      var cat = scene.add.container(640, 400).setVisible(false).setDepth(16);
+      var catImg = scene.add.image(0, -16, 'prop-file-cat');
+      catImg.setDisplaySize(140, 160);
+      cat.add([catImg, Island.ui.tag(scene, 0, 90, '小猫.png', 'file')]);
+      cat.setSize(160, 200);
 
       var names = ['桌面', '我的作品', '画画'];
       var cells = [];
-      var bar = scene.add.container(640, 130);
+      var bar = scene.add.container(640, 118);
       names.forEach(function (name, i) {
-        var cell = scene.add.container((i - 1) * 200, 0);
-        var g = scene.add.graphics();
-        Island.ui.wood(g, -84, -26, 168, 52, i === 0 ? P.hint : P.wood, P.woodDeep, 12);
-        var t = scene.add.text(0, -2, name, Island.style(22, '#4A3222', false)).setOrigin(0.5);
-        cell.add([g, t]);
-        cell.g = g;
+        var cell = Island.ui.tag(scene, (i - 1) * 180, 0, name, i === 0 ? 'peach' : 'cream');
         cells.push(cell);
         bar.add(cell);
       });
@@ -108,8 +108,8 @@
 
       function paintCell(i, on) {
         var cell = cells[i];
-        cell.g.clear();
-        Island.ui.wood(cell.g, -84, -26, 168, 52, on ? P.hint : P.wood, P.woodDeep, 12);
+        var plate = cell.list && cell.list[0];
+        if (plate && plate.setTexture) plate.setTexture(on ? 'ui-tag-mint-9slice' : 'ui-tag-cream-9slice');
       }
       function markPath(depth) {
         for (var i = 0; i < 3; i++) paintCell(i, i === depth);
@@ -139,6 +139,8 @@
         view = 'desk';
         inner.setVisible(false);
         cat.setVisible(false);
+        desk.setVisible(true);
+        deskTag.setVisible(true);
         draw.setVisible(!moved);
         music.setVisible(true);
         works.setVisible(true);
@@ -148,6 +150,8 @@
       function showWorks() {
         view = 'works';
         items.forEach(function (it) { it.setVisible(false); });
+        desk.setVisible(false);
+        deskTag.setVisible(false);
         draw.setVisible(false);
         music.setVisible(false);
         works.setVisible(false);
@@ -159,7 +163,11 @@
       }
       function showDraw() {
         view = 'draw';
-        inner.setVisible(false);
+        desk.setVisible(false);
+        deskTag.setVisible(false);
+        inner.setVisible(true);
+        innerDraw.setVisible(false);
+        decoy.setVisible(false);
         cat.setVisible(true);
         markPath(2);
       }

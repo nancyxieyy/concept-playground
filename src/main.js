@@ -13,23 +13,34 @@
 
   Island.sfx.setMuted(Island.store.muted());
 
-  var game = new Phaser.Game({
-    type: Phaser.AUTO,
-    parent: 'game',
-    width: 1280,
-    height: 720,
-    backgroundColor: '#3A2618',
-    banner: false,
-    disableContextMenu: true,
-    audio: { noAudio: true },
-    fps: { target: 60 },
-    scale: {
-      mode: Phaser.Scale.FIT,
-      autoCenter: Phaser.Scale.CENTER_BOTH
-    },
-    scene: [Island.BootScene, Island.MapScene, Island.LevelScene]
-  });
-  Island.game = game;
+  function startGame() {
+    var game = new Phaser.Game({
+      type: Phaser.AUTO,
+      parent: 'game',
+      width: 1280,
+      height: 800,
+      backgroundColor: '#8FD0EA',
+      banner: false,
+      disableContextMenu: true,
+      audio: { noAudio: true },
+      fps: { target: 60 },
+      scale: {
+        mode: Phaser.Scale.ENVELOP,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+      },
+      scene: [Island.BootScene, Island.MapScene, Island.LevelScene]
+    });
+    Island.game = game;
+  }
+
+  if (document.fonts && document.fonts.load) {
+    Promise.all([
+      document.fonts.load('40px ZK'),
+      document.fonts.load('700 28px NotoSC')
+    ]).then(startGame).catch(startGame);
+  } else {
+    startGame();
+  }
 
   window.addEventListener('pointerdown', function () { Island.sfx.unlock(); }, true);
   window.addEventListener('keydown', onKey, true);

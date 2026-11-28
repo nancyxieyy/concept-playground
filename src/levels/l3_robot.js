@@ -7,7 +7,7 @@
   Island.IMPL.robot = {
     create: function (scene, cfg) {
       var api = scene.api;
-      api.placeLucky(150, 640);
+      api.placeLucky(1170, 620, { pose: 'point', h: 210, flip: true });
       var round = 1;
       var slotCount = 3;
       var running = false;
@@ -27,11 +27,13 @@
         { id: 'teeth', label: '刷牙' }
       ];
 
-      var robot = makeRobot(scene, 250, 400);
-      var board = scene.add.graphics().setDepth(6);
-      var runBtn = Island.ui.button(scene, 900, 400, 220, 72, '▶ 运行', function () { run(); }, {
+      var robot = makeRobot(scene, 651, 400);
+      var board = Island.ui.panel(scene, 520, 635, 760, 190);
+      board.setDepth(6);
+      var runBtn = Island.ui.button(scene, 1000, 640, 200, 72, '运行', function () { run(); }, {
         states: ['PLAY']
       });
+      runBtn.add(scene.add.image(-52, -2, 'icon-play-white').setDisplaySize(32, 32));
       runBtn.setDepth(20);
 
       function pack() { return round === 1 ? shoe : brush; }
@@ -41,24 +43,23 @@
         return start + i * gap;
       }
       function slotX(i) {
-        var gap = slotCount === 4 ? 150 : 170;
-        var start = 700 - ((slotCount - 1) * gap) / 2;
-        return start + i * gap;
+        var xs = slotCount === 4 ? [230, 400, 570, 740] : [293, 483, 673];
+        return xs[i];
       }
 
       function layoutSlots() {
         slots.forEach(function (s) { s.destroy(); });
         slots = [];
-        board.clear();
-        Island.ui.wood(board, 430, 150, 620, 200, 0xE7C89A, P.woodDeep, 18);
         for (var i = 0; i < slotCount; i++) {
-          var s = scene.add.container(slotX(i), 250).setDepth(12);
-          var r = scene.add.rectangle(0, 0, 132, 72, P.cream).setStrokeStyle(4, P.ink);
-          var n = scene.add.text(0, 0, String(i + 1), Island.style(26, '#8C6950', false)).setOrigin(0.5);
-          s.add([r, n]);
+          var s = scene.add.container(slotX(i), 640).setDepth(12);
+          var r = scene.add.image(0, 0, 'ui-slot-empty').setDisplaySize(156, 140);
+          var badge = scene.add.image(-62, -58, 'ui-slot-no').setDisplaySize(36, 36);
+          var n = scene.add.text(-62, -58, String(i + 1), Island.style(20, '#FFF8EE')).setOrigin(0.5);
+          s.add([r, badge, n]);
           s.card = null;
           s.index = i;
-          s.setSize(132, 72);
+          s.plate = r;
+          s.setSize(156, 140);
           s._bsx = 1;
           s._bsy = 1;
           slots.push(s);
@@ -68,20 +69,26 @@
 
       function makeCard(def, x, y) {
         var c = scene.add.container(x, y).setDepth(18);
-        var bg = scene.add.rectangle(0, 0, 140, 72, P.cream).setStrokeStyle(4, P.ink);
-        var glow = scene.add.rectangle(0, 0, 148, 80, P.hint, 0);
-        var text = scene.add.text(0, 0, def.label, Island.style(22, '#4A3222', false)).setOrigin(0.5);
-        c.add([glow, bg, text]);
+        var bg = scene.add.image(0, 0, 'ui-card-blank').setDisplaySize(150, 150);
+        var picKey = {
+          sock: 'prop-socks', shoe: 'prop-shoe', lace: 'prop-shoe-tied',
+          brush: 'prop-toothbrush', cap: 'prop-toothpaste', paste: 'prop-toothpaste', teeth: 'prop-toothbrush'
+        }[def.id];
+        var pic = scene.add.image(0, -16, picKey);
+        pic.setDisplaySize(72 * pic.width / pic.height, 72);
+        var text = scene.add.text(0, 48, def.label, Island.style(22)).setOrigin(0.5);
+        var glow = scene.add.rectangle(0, 0, 150, 150, 0xBFE6CF, 0);
+        c.add([bg, pic, text, glow]);
         c.kind = def.id;
         c.glow = glow;
         c.home = { x: x, y: y };
         c.slotIndex = null;
-        c.setSize(140, 72);
+        c.setSize(150, 150);
         cards.push(c);
         Island.drag.make(scene, c, {
           key: def.id,
-          hw: 70,
-          hh: 36,
+          hw: 75,
+          hh: 75,
           enabled: function () { return !running; },
           targets: function () {
             var list = [];
@@ -130,7 +137,7 @@
       }
       function attachSlot(s) {
         s.setInteractive({
-          hitArea: Island.hit.rect(s, 132, 72),
+          hitArea: Island.hit.rect(s, 156, 140),
           hitAreaCallback: Phaser.Geom.Rectangle.Contains,
           useHandCursor: true
         });
@@ -293,8 +300,10 @@
       }
 
       function spread(list) {
+        var ys = list.length === 3 ? [430, 400, 360] : [400, 400, 400, 400];
+        var xs = list.length === 3 ? [300, 500, 980] : [240, 420, 600, 800];
         list.forEach(function (def, i) {
-          makeCard(def, trayX(i, list.length), 630);
+          makeCard(def, xs[i], ys[i]);
         });
         api.intro(cards);
       }
@@ -313,64 +322,35 @@
 
   function makeRobot(scene, x, y) {
     var c = scene.add.container(x, y).setDepth(14);
-    var shadow = scene.add.ellipse(0, 78, 100, 22, P.ink, 0.25);
-    var body = scene.add.rectangle(0, 16, 84, 92, 0xB9DFF3).setStrokeStyle(4, P.ink);
-    var footL = scene.add.ellipse(-22, 66, 30, 16, P.cream).setStrokeStyle(3, P.ink);
-    var footR = scene.add.ellipse(22, 66, 30, 16, P.cream).setStrokeStyle(3, P.ink);
-    var arm = scene.add.container(48, -8);
-    var armRect = scene.add.rectangle(0, 22, 18, 50, P.orange).setStrokeStyle(4, P.ink);
-    var paste = scene.add.circle(0, 52, 14, 0x7EC8F0).setStrokeStyle(3, P.ink).setVisible(false);
-    arm.add([armRect, paste]);
-    var head = scene.add.container(0, -62);
-    var skull = scene.add.circle(0, 0, 36, 0xE7F4FB).setStrokeStyle(4, P.ink);
-    var eyeL = scene.add.circle(-12, -6, 6, P.ink);
-    var eyeR = scene.add.circle(12, -6, 6, P.ink);
-    var mouth = scene.add.rectangle(0, 14, 16, 6, P.ink);
-    var bubbles = scene.add.container(0, 16);
-    head.add([skull, eyeL, eyeR, mouth, bubbles]);
-    c.add([shadow, footL, footR, body, arm, head]);
-    c.arm = arm;
-    c.head = head;
-    c.paste = paste;
-    c.footL = footL;
-    c.footR = footR;
-    c.bubbles = bubbles;
+    var shadow = scene.add.ellipse(0, 120, 140, 24, 0x4A3222, 0.25);
+    var body = scene.add.image(0, 0, 'prop-robot-idle');
+    body.setDisplaySize(182, 250);
+    c.add([shadow, body]);
+    c.body = body;
+    function face(key) {
+      if (c.scene && scene.textures.exists(key)) body.setTexture(key);
+    }
     c.pose = function (kind) {
-      if (kind === 'sock') { footL.setFillStyle(P.sage); footR.setFillStyle(P.sage); }
-      if (kind === 'shoe') { footL.setFillStyle(P.woodDeep); footR.setFillStyle(P.woodDeep); }
-      if (kind === 'lace') {
+      if (kind === 'lace' || kind === 'teeth') {
         if (!Island.MOTION.calm) scene.tweens.add({ targets: c, y: y - 10, yoyo: true, duration: 120 });
       }
-      if (kind === 'brush' || kind === 'teeth') arm.angle = -50;
-      if (kind === 'cap') arm.angle = -20;
-      if (kind === 'paste') { arm.angle = -40; paste.setVisible(true); }
     };
     c.oops = function () {
-      paste.setVisible(true);
+      face('prop-robot-oops');
       if (Island.MOTION.calm) return;
-      scene.tweens.add({ targets: head, angle: 14, duration: 180, ease: 'Back.easeOut' });
-      scene.tweens.add({ targets: arm, angle: -80, duration: 200, ease: 'Back.easeOut' });
+      scene.tweens.add({ targets: c, angle: 8, yoyo: true, duration: 160 });
     };
     c.dance = function () {
+      face('prop-robot-happy');
       if (Island.MOTION.calm) return;
       scene.tweens.add({ targets: c, y: y - 16, yoyo: true, repeat: 1, duration: 140 });
     };
-    c.clean = function () {
-      for (var i = 0; i < 3; i++) {
-        var b = scene.add.circle((i - 1) * 14, 0, 8, 0xffffff, 0.9).setStrokeStyle(2, P.skyBot);
-        bubbles.add(b);
-      }
-      c.dance();
-    };
+    c.clean = function () { c.dance(); };
     c.reset = function () {
-      arm.angle = 0;
-      head.angle = 0;
-      paste.setVisible(false);
-      footL.setFillStyle(P.cream);
-      footR.setFillStyle(P.cream);
-      bubbles.removeAll(true);
+      c.angle = 0;
+      face('prop-robot-idle');
     };
-    c.setSize(120, 180);
+    c.setSize(180, 250);
     return c;
   }
 })();

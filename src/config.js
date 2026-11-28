@@ -11,10 +11,11 @@
   Island.params = params;
   Island.MOTION = { calm: reduce || params.get('calm') === '1' };
   Island.DEBUG = params.get('debug') === '1';
-  Island.FONT = '"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei","Noto Sans SC","Source Han Sans SC","WenQuanYi Micro Hei",system-ui,sans-serif';
-  Island.EMOJI = '"Noto Color Emoji","Apple Color Emoji","Segoe UI Emoji",sans-serif';
+  Island.FONT = 'ZK, "PingFang SC", "Microsoft YaHei", sans-serif';
+  Island.BODY = 'NotoSC, "PingFang SC", "Microsoft YaHei", sans-serif';
   Island.state = 'BOOT';
-  Island.DESIGN = { w: 1280, h: 720 };
+  Island.DESIGN = { w: 1280, h: 800 };
+  Island.ZOOM_MAX = 1.6;
 
   Island.PAL = {
     ink: 0x4A3222,
@@ -51,17 +52,27 @@
   Island.style = function (size, color, stroke) {
     var o = {
       fontFamily: Island.FONT,
-      fontStyle: 'bold',
       fontSize: size + 'px',
-      color: color || '#FFF4E0',
+      color: color || '#4A3222',
       resolution: 2,
       align: 'center'
     };
-    if (stroke !== false) {
+    if (stroke === true) {
       o.stroke = '#4A3222';
       o.strokeThickness = 6;
     }
     return o;
+  };
+
+  Island.bodyStyle = function (size, color) {
+    return {
+      fontFamily: Island.BODY,
+      fontStyle: 'bold',
+      fontSize: size + 'px',
+      color: color || '#4A3222',
+      resolution: 2,
+      align: 'center'
+    };
   };
 
   Island.chars = function (s) {
