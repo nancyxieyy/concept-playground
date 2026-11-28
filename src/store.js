@@ -28,13 +28,14 @@
   }
 
   function write(data) {
+    if (Island.QA_TOUR) return;
     try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) {}
   }
 
-  var data = read();
+  var data = Island.QA_TOUR ? fresh() : read();
   Island.session = { unlockAll: Island.params.get('unlock') === 'all' };
 
-  if (Island.params.get('reset') === '1') {
+  if (!Island.QA_TOUR && Island.params.get('reset') === '1') {
     try { localStorage.removeItem(KEY); } catch (e) {}
     data = fresh();
     try {

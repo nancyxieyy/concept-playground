@@ -13,6 +13,7 @@
 
     init(data) {
       this.levelId = data && data.id;
+      this.qaScreen = Island.QA_TOUR && data ? data.qaScreen : null;
       this.cfg = null;
       var list = Island.LEVELS;
       for (var i = 0; i < list.length; i++) {
@@ -55,7 +56,7 @@
         self.mute.setMutedIcon(m);
       }, { states: ['IDLE', 'PLAY', 'MODAL'] });
       this.mute.setMutedIcon(Island.store.muted());
-      this.counter = Island.ui.beans(this, 1040, 52);
+      this.counter = Island.ui.beans(this, 1048, 52);
       this.counter.setCount(Math.max(0, Island.store.totalStars()));
       this.hud.add([this.task, this.beads, this.home, this.hintBtn, this.counter, this.mute]);
       Island.layout.watch(this, function (rect) {
@@ -63,8 +64,9 @@
         this.beads.setPosition(rect.left + 104, rect.top + 52);
         this.mute.setHomePosition(rect.right - 56, rect.top + 52);
         this.hintBtn.setHomePosition(rect.right - 136, rect.top + 52);
-        this.counter.setPosition(rect.right - 240, rect.top + 52);
-        this.task.setPosition(rect.centerX, rect.top + 78);
+        this.counter.alignRight(rect.right - 184);
+        this.counter.y = rect.top + 52;
+        this.task.setPosition(rect.centerX, rect.top + 88);
       });
 
       this.lucky = new Island.Lucky(this, -200, this.stand.y, { h: 250, pose: 'point' });
@@ -95,7 +97,8 @@
         if (!alive(self)) return;
         Island.state = 'PLAY';
         self.input.enabled = true;
-        self.coach.arm();
+        if (!Island.QA_TOUR) self.coach.arm();
+        if (Island.QA_TOUR) Island.qa.ready(self);
       });
 
       var esc = function () { self.exitHome(); };
@@ -123,7 +126,7 @@
         if (self.impl && self.impl.destroy) self.impl.destroy();
       });
 
-      if (Island.DEBUG) {
+      if (Island.DEBUG && !Island.QA_TOUR) {
         this._fps = this.add.text(24, 112, '', Island.style(18)).setOrigin(0, 0.5);
         this.hud.add(this._fps);
         this._fpsT = 0;
@@ -203,7 +206,8 @@
       this.home.setVisible(false);
       this.hintBtn.setVisible(false);
       this.task.setVisible(false);
-      this.counter.setVisible(true);
+      this.beads.setVisible(false);
+      this.counter.setVisible(!Island.QA_TOUR);
       var total = Island.store.totalStars();
       var shown = Math.max(0, total - stars);
       this.counter.setCount(shown);

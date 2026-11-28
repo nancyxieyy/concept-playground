@@ -65,6 +65,7 @@
         return;
       }
     }
+    if (Island.QA_TOUR) return;
     if (e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'r' || e.key === 'R') && !e.repeat) {
       e.preventDefault();
       Island.store.reset();

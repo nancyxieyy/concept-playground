@@ -99,6 +99,10 @@
       Island.onConfirm = function () {
         if (self._ceremony && self._take) self._take();
       };
+      if (Island.QA_TOUR) {
+        this.input.enabled = false;
+        this.time.delayedCall(220, function () { Island.qa.ready(self); });
+      }
       this.events.once('shutdown', function () {
         if (Island.onEscape === esc) Island.onEscape = null;
         Island.forceReady = null;
@@ -315,24 +319,22 @@
     }
 
     buildHud() {
-      this.counter = Island.ui.beans(this, 110, 52);
+      this.counter = Island.ui.beans(this, 74, 52);
       this.counter.setCount(Island.store.totalStars());
-      var title = Island.ui.nametag(this, 640, 50, '电脑小岛', 'peach');
-      var icon = this.add.image(640 - title.width / 2 + 8, 50, 'icon-persimmon').setDisplaySize(36, 36);
+      var title = Island.ui.nametag(this, 640, 52, '电脑小岛', 'peach', 'icon-persimmon', { font: 34, height: 64 });
       this.mute = Island.ui.round(this, 1224, 52, 'speaker', function () {
         if (Island.state !== 'IDLE' && Island.state !== 'PLAY' && Island.state !== 'MODAL') return;
         this.mute.setMutedIcon(Island.sfx.toggle());
       }.bind(this), { states: ['IDLE', 'PLAY', 'MODAL'] });
       this.mute.setMutedIcon(Island.store.muted());
-      this.hud.add([this.counter, title, icon, this.mute]);
-      this.titleIcon = icon;
+      this.hud.add([this.counter, title, this.mute]);
       Island.layout.watch(this, function (rect) {
-        this.counter.setPosition(rect.left + 110, rect.top + 52);
-        title.setPosition(rect.centerX, rect.top + 50);
-        icon.setPosition(rect.centerX - title.width / 2 + 8, rect.top + 50);
+        this.counter.alignLeft(rect.left + 24);
+        this.counter.y = rect.top + 52;
+        title.setPosition(rect.centerX, rect.top + 52);
         this.mute.setHomePosition(rect.right - 56, rect.top + 52);
       });
-      if (Island.DEBUG) {
+      if (Island.DEBUG && !Island.QA_TOUR) {
         this._fps = this.add.text(24, 112, '', Island.style(18, '#4A3222')).setOrigin(0, 0.5);
         this.hud.add(this._fps);
         this._fpsT = 0;
@@ -489,12 +491,11 @@
       var scrim = this.add.rectangle(640, 400, 1800, 1200, 0xE7F6FB, 0.35);
       var rays = this.add.image(640, 300, 'ui-rays').setDisplaySize(640, 640).setAlpha(0.55);
       var badge = this.add.image(640, 250, 'prop-badge-island').setDisplaySize(180, 228);
-      var name = Island.ui.nametag(this, 640, 390, '电脑小岛岛主', 'peach');
-      var persimmon = this.add.image(640 - name.width / 2 + 6, 390, 'icon-persimmon').setDisplaySize(36, 36);
+      var name = Island.ui.nametag(this, 640, 390, '电脑小岛岛主', 'peach', 'icon-persimmon', { font: 34, height: 64 });
       var line = Island.ui.tag(this, 640, 456, '4 关全通，小岛是你的了！', 'cream');
       var chest = this.add.image(640, 600, 'prop-chest-open').setDisplaySize(230, 250);
       var btn = Island.ui.button(this, 1080, 730, 220, 72, '收下徽章', function () { self._take(); }, { states: ['MODAL'] });
-      layer.add([scrim, rays, chest, badge, name, persimmon, line, btn]);
+      layer.add([scrim, rays, chest, badge, name, line, btn]);
       this.hud.add(layer);
       if (this.lucky) {
         this.hud.add(this.lucky.root);

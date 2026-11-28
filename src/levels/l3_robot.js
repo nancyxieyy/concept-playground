@@ -53,9 +53,8 @@
         for (var i = 0; i < slotCount; i++) {
           var s = scene.add.container(slotX(i), 640).setDepth(12);
           var r = scene.add.image(0, 0, 'ui-slot-empty').setDisplaySize(156, 140);
-          var badge = scene.add.image(-62, -58, 'ui-slot-no').setDisplaySize(36, 36);
-          var n = scene.add.text(-62, -58, String(i + 1), Island.style(20, '#FFF8EE')).setOrigin(0.5);
-          s.add([r, badge, n]);
+          var badge = Island.ui.slotNumber(scene, -62, -92, i + 1);
+          s.add([r, badge]);
           s.card = null;
           s.index = i;
           s.plate = r;
@@ -76,7 +75,7 @@
         }[def.id];
         var pic = scene.add.image(0, -16, picKey);
         pic.setDisplaySize(72 * pic.width / pic.height, 72);
-        var text = scene.add.text(0, 48, def.label, Island.style(22)).setOrigin(0.5);
+        var text = Island.ui.label(scene, 0, 48, def.label, { font: 24 });
         var glow = scene.add.rectangle(0, 0, 150, 150, 0xBFE6CF, 0);
         c.add([bg, pic, text, glow]);
         c.kind = def.id;
@@ -309,9 +308,10 @@
       }
 
       api.onRun = run;
-      api.setTask(cfg.tasks[0]);
+      if (scene.qaScreen && scene.qaScreen.round === 2) round = 2;
+      api.setTask(cfg.tasks[round - 1]);
       layoutSlots();
-      spread(shoe);
+      spread(pack());
       api.intro([robot, runBtn]);
       arm();
       this._robot = robot;

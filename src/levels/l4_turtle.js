@@ -38,13 +38,12 @@
       var frame = scene.add.graphics();
       frame.lineStyle(5, 0x6FB7D6, 1);
       frame.strokeRoundedRect(210, 544, 700, 192, 32);
-      var badge = scene.add.image(232, 562, 'ui-slot-no').setDisplaySize(36, 36);
-      var badgeN = scene.add.text(232, 562, '1', Island.style(18, '#FFF8EE')).setOrigin(0.5);
-      controls.add([panel, frame, badge, badgeN, repWell, degWell, repText, degText]);
+      var badge = Island.ui.slotNumber(scene, 232, 562, 1);
+      controls.add([panel, frame, badge, repWell, degWell, repText, degText]);
       controls.add([
         scene.add.text(300, 600, '重复', Island.style(32)).setOrigin(0, 0.5),
         scene.add.text(300, 668, '右转', Island.style(32)).setOrigin(0, 0.5),
-        scene.add.text(650, 600, '次', Island.style(30)).setOrigin(0, 0.5)
+        scene.add.text(736, 600, '次', Island.style(30)).setOrigin(0, 0.5)
       ]);
 
       function bump(obj) {
@@ -71,10 +70,10 @@
         arm();
       }
 
-      var minusR = Island.ui.round(scene, 470, 600, 'minus', function () { setRep(reps - 1); }, { states: ['PLAY'] });
-      var plusR = Island.ui.round(scene, 650, 600, 'plus', function () { setRep(reps + 1); }, { states: ['PLAY'] });
-      var minusD = Island.ui.round(scene, 470, 668, 'minus', function () { setDeg(-1); }, { states: ['PLAY'] });
-      var plusD = Island.ui.round(scene, 650, 668, 'plus', function () { setDeg(1); }, { states: ['PLAY'] });
+      var minusR = Island.ui.round(scene, 440, 600, 'minus', function () { setRep(reps - 1); }, { states: ['PLAY'] });
+      var plusR = Island.ui.round(scene, 680, 600, 'plus', function () { setRep(reps + 1); }, { states: ['PLAY'] });
+      var minusD = Island.ui.round(scene, 440, 668, 'minus', function () { setDeg(-1); }, { states: ['PLAY'] });
+      var plusD = Island.ui.round(scene, 680, 668, 'plus', function () { setDeg(1); }, { states: ['PLAY'] });
       controls.add([minusR, plusR, minusD, plusD]);
       controls.setDepth(20);
 
@@ -90,7 +89,7 @@
       function addSlot(x, y) {
         var s = scene.add.container(x, y).setDepth(12);
         var r = scene.add.image(0, 0, 'ui-slot-empty').setDisplaySize(120, 100);
-        var n = scene.add.text(0, 0, String(slots.length + 1), Island.style(22, '#8C6950')).setOrigin(0.5);
+        var n = Island.ui.slotNumber(scene, -42, -68, slots.length + 1);
         s.add([r, n]);
         s.card = null;
         s.index = slots.length;
@@ -102,9 +101,9 @@
       }
       function board8() {
         clearSlots();
-        var xs = [430, 550, 670, 790];
+        var xs = [430, 566, 702, 838];
         for (var row = 0; row < 2; row++) {
-          for (var col = 0; col < 4; col++) addSlot(xs[col], row === 0 ? 500 : 580);
+          for (var col = 0; col < 4; col++) addSlot(xs[col], row === 0 ? 496 : 622);
         }
       }
       function board1() {
@@ -122,11 +121,11 @@
         var label = kind === 'F' ? '前进' : kind === 'R' ? '右转' : '重复';
         var c = scene.add.container(x, y).setDepth(18);
         var bg = scene.add.image(0, 0, 'ui-card-blank').setDisplaySize(kind === 'L' ? 150 : 120, kind === 'L' ? 150 : 96);
-        var icon = scene.add.image(0, kind === 'L' ? -16 : -8, kind === 'R' ? 'icon-back' : 'icon-play');
-        icon.setDisplaySize(36, 36);
+        var icon = scene.add.image(0, kind === 'L' ? -16 : -14, kind === 'R' ? 'icon-back' : 'icon-play');
+        icon.setDisplaySize(32, 32);
         if (kind === 'F') icon.setAngle(-90);
         if (kind === 'R') icon.setFlipX(true);
-        var text = scene.add.text(0, kind === 'L' ? 40 : 28, label, Island.style(22)).setOrigin(0.5);
+        var text = Island.ui.label(scene, 0, kind === 'L' ? 40 : 24, label, { font: 24 });
         c.add([bg, icon, text]);
         c.kind = kind;
         c.setSize(kind === 'L' ? 150 : 120, kind === 'L' ? 150 : 96);
@@ -409,6 +408,14 @@
       api.setTask(cfg.tasks[0]);
       api.intro([turtle, forwardCard, rightCard, runBtn].concat(slots));
       arm();
+
+      if (scene.qaScreen && scene.qaScreen.round === 2) {
+        startRepeat();
+        if (scene.qaScreen.view === 'controls') {
+          slots[0].card = chip('L', slots[0].x, slots[0].y);
+          onPlaced();
+        }
+      }
 
       Island.onArrow = function (key) {
         if (!api.playable() || round !== 2 || !controls.visible) return;
