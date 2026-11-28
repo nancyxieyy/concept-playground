@@ -3,7 +3,7 @@
   'use strict';
   var Island = window.Island;
   var P = Island.PAL;
-  var STEP = 110;
+  var STEP = 75;
 
   Island.IMPL.turtle = {
     create: function (scene, cfg) {
@@ -13,6 +13,7 @@
       var round = 1;
       var running = false;
       var yawned = false;
+      var targetSides = scene.challenge ? 8 : 3;
       var reps = 3;
       var deg = 90;
       var slots = [];
@@ -20,7 +21,13 @@
       var chips = [];
 
       var ink = scene.add.graphics().setDepth(8);
+      var maskShape = scene.make.graphics({x:0,y:0,add:false});
+      maskShape.fillStyle(0xffffff).fillRect(300,160,650,300);
+      var drawMask = maskShape.createGeometryMask();
+      ink.setMask(drawMask);
+      scene.events.once('shutdown', function () { maskShape.destroy(); });
       var turtle = makeTurtle(scene, 630, 360);
+      turtle.setMask(drawMask);
       var home = { x: 630, y: 360 };
 
       var runBtn = Island.ui.button(scene, 980, 640, 180, 72, '运行', function () { go(); }, { states: ['PLAY'] });
@@ -53,14 +60,16 @@
         Island.fx.tween(scene, obj, { scaleX: 1, scaleY: 1 }, { dur: 140, ease: 'Back.easeOut' });
       }
       function setRep(n) {
-        reps = Phaser.Math.Clamp(n, 1, 6);
+        if (!api.playable() || running) return;
+        reps = Phaser.Math.Clamp(n, 1, 8);
         repText.setText(String(reps));
         bump(repText);
         Island.sfx.play('click');
         arm();
       }
       function setDeg(n) {
-        var list = [60, 90, 120, 150];
+        if (!api.playable() || running) return;
+        var list = [45, 60, 90, 120, 150];
         var i = list.indexOf(deg);
         if (i < 0) i = 1;
         i = Phaser.Math.Clamp(i + n, 0, list.length - 1);
@@ -146,6 +155,7 @@
               Island.drag.park(obj, obj.home.x, obj.home.y);
               return;
             }
+            api.count();
             var placed = chip(obj.kind, t.x, t.y);
             placed.slotIndex = t.index;
             slots[t.index].card = placed;
@@ -220,7 +230,7 @@
               var c = chip('L', slots[0].x, slots[0].y);
               slots[0].card = c;
               Island.fx.pop(scene, c, 0, 1);
-              controls.setVisible(true);
+              onPlaced();
             }
           } });
         } else {
@@ -228,7 +238,7 @@
           api.setStep({
             goal: goal,
             hint: cfg.hints.tri,
-            demo: function () { reps = 3; deg = 120; repText.setText('3'); degText.setText('120°'); }
+            demo: function () { api.say(cfg.hints.tri, 'hint'); }
           });
         }
       }
@@ -351,7 +361,7 @@
           steps.push('F');
           steps.push(deg * Math.PI / 180);
         }
-        var ok = reps === 3 && deg === 120;
+        var ok = Island.rules.polygon(reps, deg, targetSides);
         runSteps(steps, function () {
           running = false;
           scene.locked = false;
@@ -366,10 +376,7 @@
             scene.coach.goal = reps !== 3 ? repText : degText;
             scene.coach.hintLine = cfg.hints.tri;
             scene.coach.demo = function () {
-              reps = 3;
-              deg = 120;
-              repText.setText('3');
-              degText.setText('120°');
+              api.say(cfg.hints.tri, 'hint');
             };
             api.miss(cfg.bubbles.close);
           }
@@ -378,7 +385,8 @@
 
       function startRepeat() {
         round = 2;
-        api.setTask(cfg.tasks[1]);
+        api.resetSteps();
+        api.setTask(scene.challenge ? '只用一张卡画八边形' : cfg.tasks[1]);
         if (scene.lucky) {
           scene.lucky.setLook({ pose: 'point', h: 230, flip: false });
           scene.lucky.say('几条边？数一数');
@@ -409,6 +417,7 @@
       api.setTask(cfg.tasks[0]);
       api.intro([turtle, forwardCard, rightCard, runBtn].concat(slots));
       arm();
+      if (scene.challenge) startRepeat();
 
       Island.onArrow = function (key) {
         if (!api.playable() || round !== 2 || !controls.visible) return;

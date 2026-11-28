@@ -13,6 +13,8 @@
 
     init(data) {
       this.levelId = data && data.id;
+      this.challenge = !!(data && data.challenge);
+      this.steps = 0;
       this.cfg = null;
       var list = Island.LEVELS;
       for (var i = 0; i < list.length; i++) {
@@ -23,6 +25,7 @@
     create() {
       var self = this;
       var cfg = this.cfg;
+      Island.checkSceneCopy(this);
       Island.clearWatch();
       if (!cfg || !Island.IMPL[cfg.id]) {
         this.scene.start('Map', {});
@@ -68,6 +71,7 @@
       });
 
       this.lucky = new Island.Lucky(this, -200, this.stand.y, { h: 250, pose: 'point' });
+      this.hintBtn.setVisible(!this.challenge);
       this.coach = Island.coach.attach(this, cfg.tuning);
       this.api = this.makeApi();
       Island.IMPL[cfg.id].create(this, cfg);
@@ -135,10 +139,14 @@
       var cfg = this.cfg;
       return {
         onRun: null,
+        count: function (n) { scene.steps += n == null ? 1 : n; },
+        resetSteps: function () { scene.steps = 0; },
+        setSteps: function (n) { scene.steps = n; },
         playable: function () {
           return Island.state === 'PLAY' && !scene.won && !scene.locked;
         },
         setTask: function (text) {
+          Island.assertCopy('task', text, 15);
           scene.task.setText(text);
           var i = cfg.tasks.indexOf(text);
           if (i >= 0 && scene.beads) scene.beads.setIndex(i);
@@ -178,9 +186,17 @@
 
     win() {
       if (this.won) return;
+      if (this.challenge && (this.steps > this.cfg.challengeLimit || this.coach.hints || this.coach.misses)) {
+        this.api.say('再试一次拿金星', 'hint');
+        var retry = this;
+        this.locked = true;
+        this.time.delayedCall(1400, function () { retry.scene.restart({id: retry.cfg.id, challenge: true}); });
+        return;
+      }
       this.won = true;
       var stars = this.coach.stars();
-      Island.store.clearLevel(this.cfg.id, stars, this.coach.misses, this.coach.hints);
+      this.starGain = Math.max(0, stars - Island.store.starsOf(this.cfg.id));
+      Island.store.clearLevel(this.cfg.id, stars, this.coach.misses, this.coach.hints, this.steps, this.challenge);
       Island.state = 'MODAL';
       this.input.enabled = true;
       Island.sfx.play('win');
@@ -205,34 +221,17 @@
       this.task.setVisible(false);
       this.counter.setVisible(true);
       var total = Island.store.totalStars();
-      var shown = Math.max(0, total - stars);
-      this.counter.setCount(shown);
+      this.counter.setCount(total);
       var card = Island.ui.concept(this, this.cfg, stars, function () { self.leave(true); }, function () {
-        self.scene.restart({ id: self.cfg.id });
+        self.scene.restart({ id: self.cfg.id, challenge: self.challenge });
       });
+      var challengeBtn = Island.ui.button(this, 0, 240, 160, 60, this.challenge ? '再挑战' : '挑战', function () {
+        self.scene.restart({ id: self.cfg.id, challenge: true });
+      }, { kind: 'secondary', states: ['MODAL'] });
+      card.root.add(challengeBtn);
+      if (this.challenge) card.root.add(this.add.image(232, -130, 'prop-star-lit').setDisplaySize(70, 70).setTint(0xFFD34D));
       this._continue = function () { self.leave(true); };
-      if (Island.MOTION.calm || !card.slots) {
-        this.counter.setCount(total);
-        return;
-      }
-      card.slots.forEach(function (star, i) {
-        if (!star._earned) return;
-        self.time.delayedCall(860 + i * 300, function () {
-          if (!alive(self) || !star.scene) return;
-          var tx = self.counter.x - card.root.x;
-          var ty = self.counter.y - card.root.y;
-          Island.fx.tween(self, star, { x: tx, y: ty }, {
-            dur: 600,
-            ease: 'Cubic.easeIn',
-            onComplete: function () {
-              star.setVisible(false);
-              shown += 1;
-              self.counter.setCount(shown);
-              self.counter.bump();
-            }
-          });
-        });
-      });
+      this.counter.setCount(total);
     }
 
     exitHome() {
@@ -267,7 +266,7 @@
     }
 
     paint(name) {
-      var key = name === 'porch' ? 'bg-l1' : name === 'storage' ? 'bg-l2' : name === 'hall' ? 'bg-l3' : 'bg-l4';
+      var key = name === 'hill' ? 'bg-l8' : name === 'porch' ? 'bg-l1' : name === 'storage' ? 'bg-l2' : name === 'hall' ? 'bg-l3' : 'bg-l4';
       Island.layout.background(this, key);
     }
 

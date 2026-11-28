@@ -244,18 +244,18 @@
       return c;
     },
 
-    nametag: function (scene, x, y, label, kind) {
+    nametag: function (scene, x, y, label, kind, compact) {
       kind = kind || 'peach';
       var key = kind === 'dim' ? 'ui-nametag-dim-9slice' : kind === 'mint' ? 'ui-nametag-mint-9slice' : 'ui-nametag-peach-9slice';
       var c = scene.add.container(x, y);
-      var plate = slice(scene, key, 0, 0, 150, 46, 24);
+      var plate = slice(scene, key, 0, 0, 150, compact ? 28 : 46, compact ? 12 : 24);
       var color = kind === 'dim' ? '#8C6950' : kind === 'mint' ? '#2F6B4C' : '#4A3222';
-      var text = scene.add.text(0, -1, label, Island.style(24, color)).setOrigin(0.5);
+      var text = scene.add.text(0, -1, label, Island.style(compact ? 20 : 24, color)).setOrigin(0.5);
       c.add([plate, text]);
       var w = Math.max(120, text.width + 36);
-      plate.setSize(w * 2, 92);
+      plate.setSize(w * 2, compact ? 56 : 92);
       plate.setScale(0.5);
-      c.setSize(w, 46);
+      c.setSize(w, compact ? 28 : 46);
       c.setKind = function (next, nextLabel) {
         var k = next === 'dim' ? 'ui-nametag-dim-9slice' : next === 'mint' ? 'ui-nametag-mint-9slice' : 'ui-nametag-peach-9slice';
         plate.setTexture(k);
@@ -270,6 +270,7 @@
     },
 
     bubble: function (scene, text, hint) {
+      Island.assertCopy('bubble', text, 12);
       var c = scene.add.container(0, 0);
       var key = hint ? 'ui-bubble-hint-9slice' : 'ui-bubble-cream-9slice';
       var tailKey = hint ? 'ui-bubble-tail-hint' : 'ui-bubble-tail-cream';
@@ -309,13 +310,14 @@
         slots.push(star);
       }
       var title = scene.add.text(0, 20, cfg.concept.name, Island.style(52)).setOrigin(0.5);
-      var line = scene.add.text(0, 86, cfg.concept.line, Island.bodyStyle(28, '#8C6950')).setOrigin(0.5);
-      var pill = Island.ui.beans(scene, 0, 156);
-      pill.setCount('+' + stars);
-      var beanLabel = scene.add.text(28, 156, '星豆', Island.style(26)).setOrigin(0, 0.5);
-      var again = Island.ui.button(scene, -110, 240, 180, 60, '再玩一次', onReplay, { kind: 'secondary', states: ['MODAL'] });
-      var next = Island.ui.button(scene, 120, 246, 200, 72, '回小岛', onContinue, { states: ['MODAL'] });
-      root.add([scrim, panel, tag, title, line, pill, beanLabel, again, next].concat(slots));
+      var line = scene.add.text(0, 70, cfg.concept.line, Island.bodyStyle(28, '#8C6950')).setOrigin(0.5);
+      var pill = Island.ui.beans(scene, 0, 166);
+      pill.setCount('+' + (scene.starGain == null ? stars : scene.starGain));
+      var beanLabel = scene.add.text(28, 166, '星豆', Island.style(26)).setOrigin(0, 0.5);
+      var again = Island.ui.button(scene, -190, 240, 170, 60, '再玩一次', onReplay, { kind: 'secondary', states: ['MODAL'] });
+      var next = Island.ui.button(scene, 190, 246, 170, 72, '回小岛', onContinue, { states: ['MODAL'] });
+      var metric = scene.add.text(0, 110, '本轮 ' + scene.steps + ' 步 · 目标 ' + (scene.challenge ? cfg.challengeLimit : cfg.standard) + ' 步', Island.bodyStyle(20)).setOrigin(0.5);
+      root.add([scrim, panel, tag, title, line, metric, pill, beanLabel, again, next].concat(slots));
       if (!Island.MOTION.calm) {
         root.setScale(0.6);
         Island.fx.tween(scene, root, { scaleX: 1, scaleY: 1 }, { dur: 420, ease: 'Back.easeOut' });

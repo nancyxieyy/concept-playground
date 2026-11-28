@@ -103,7 +103,7 @@
         obj.setScale(obj._bsx, obj._bsy);
       });
       obj.on('pointerdown', function (p) {
-        if (Island.state !== 'PLAY' || (opt.enabled && !opt.enabled())) return;
+        if (Island.state !== 'PLAY' || scene.locked || scene.won || (opt.enabled && !opt.enabled())) return;
         if (Island.DEBUG) Island._inAt = performance.now();
         Island.sfx.play('press');
         obj.setScale(obj._bsx * 0.92, obj._bsy * 0.92);
@@ -141,7 +141,7 @@
           var grab = Island.PACK && Island.PACK['ui-cursor-grab'];
           scene.input.setDefaultCursor(grab ? 'url("' + grab + '") 16 16, grabbing' : 'grabbing');
           if (obj.input) obj.input.cursor = 'grabbing';
-          breathe(true);
+          if (scene.coach && scene.coach.hints && !scene.challenge) breathe(true);
           if (opt.onLift) opt.onLift(obj);
         }
         if (!st.dragging) return;
@@ -227,7 +227,12 @@
         var i = live.indexOf(st);
         if (i >= 0) live.splice(i, 1);
       }
-      scene.events.once('shutdown', dropListeners);
+      scene.events.once('shutdown', function () {
+        dropListeners();
+        Island.drag.busy = false;
+        Island.drag.just = false;
+        scene.input.setDefaultCursor('default');
+      });
       obj.once('destroy', dropListeners);
 
       st.step = function () {

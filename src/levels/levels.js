@@ -1,4 +1,4 @@
-/* 四关文案和坐标。改字只改这里。 */
+/* 八关文案和坐标。改字只改这里。 */
 (function () {
   'use strict';
   var Island = window.Island;
@@ -12,8 +12,8 @@
       icon: '🚪',
       map: { x: 360, y: 560 },
       bg: 'porch',
-      tasks: ['点亮 3 颗星星', '打开礼物盒', '把钥匙拖到门上'],
-      concept: { name: '鼠标三招', line: '单击选中·双击打开·拖动搬走' },
+      tasks: ['让门打开', '让门打开', '让门打开'],
+      concept: { name: '鼠标键盘', line: '单击选中·双击打开·拖动搬走' },
       bubbles: { single: '要点两下哦', door: '门在那边' },
       hints: { star: '点一下星星', gift: '快点两下：咚咚！', key: '把钥匙拖到门上' },
       tuning: { dblMs: 400, magnet: 80, idleHintMs: 20000, wrongToHint: 2, wrongToDemo: 3 }
@@ -25,7 +25,7 @@
       icon: '📦',
       map: { x: 560, y: 450 },
       bg: 'storage',
-      tasks: ['把东西放进对的箱子', '把「画画」搬进「我的作品」', '照路径找到小猫.png'],
+      tasks: ['把文件放进对的箱子', '用最少的拖放，全搬走', '找到相册里的小猫'],
       concept: { name: '文件夹和路径', line: '文件夹像书包，路径是一层层的路线' },
       bubbles: {
         music: '它该去「音乐」',
@@ -34,7 +34,7 @@
         seek: '跟着箱子走啦',
         layer: '不是这一层'
       },
-      hints: { sort: '看颜色放进去', move: '画画放进作品', path: '按牌子一层层开' },
+      hints: { sort: '看看文件名末尾', move: '画画放进作品', path: '按牌子一层层开' },
       tuning: { dblMs: 400, magnet: 110, idleHintMs: 20000, wrongToHint: 2, wrongToDemo: 3 }
     },
     {
@@ -45,7 +45,7 @@
       map: { x: 820, y: 510 },
       bg: 'hall',
       tasks: ['帮机器人穿鞋', '帮机器人刷牙'],
-      concept: { name: '顺序和 bug', line: '电脑照顺序做，错一步就是 bug' },
+      concept: { name: '顺序', line: '每一步排好，才能做对' },
       bubbles: {
         socks: '袜子套在鞋外面啦',
         lace: '鞋带系早啦',
@@ -64,13 +64,37 @@
       icon: '🐢',
       map: { x: 1020, y: 400 },
       bg: 'beach',
-      tasks: ['画一个正方形', '只用 1 格画三角形'],
-      concept: { name: '重复（循环）', line: '同样的事，说「重复几次」就够' },
+      tasks: ['画一个正方形', '只用一张卡画三角形'],
+      concept: { name: '重复', line: '同样的事，说「重复几次」就够' },
       bubbles: { tired: '手好酸…用重复吧', close: '差一点，再数数', more: '再放几张', empty: '先放卡片' },
-      hints: { square: '前进右转交替', tri: '3 次，转 120 度' },
+      hints: { square: '前进右转交替', tri: '转三次，刚好一圈' },
       tuning: { magnet: 70, idleHintMs: 20000, wrongToHint: 2, wrongToDemo: 3 }
     }
   ];
+
+  function extra(id, name, bg, tasks, concept, line) {
+    return { id: id, name: name, bg: bg, tasks: tasks,
+      concept: { name: concept, line: line }, bubbles: {}, hints: {},
+      tuning: { magnet: 70, idleHintMs: 20000, wrongToHint: 2, wrongToDemo: 3 } };
+  }
+  Island.LEVELS.splice(3, 0,
+    extra('debug', '机器人修 bug', 'hall', ['点出错的那一步'], '找错', '先看哪里不对，再改那一步'),
+    extra('weather', '看天气出门', 'porch', ['按天气选东西'], '如果…就…', '不同的天气，选不同的东西'));
+  Island.LEVELS.push(
+    extra('turtlePlus', '乌龟省步数', 'beach', ['它少画了一边', '画一个六边形'], '重复与规律', '转完一圈，图形就合上了'),
+    extra('island', '小岛大挑战', 'hill', ['用最少的卡走到旗子'], '一起用', '排好顺序，看路，再重复'));
+  var centers = [[268,512],[431,522],[603,522],[752,462],[934,458],[1025,358],[1027,246],[1013,150]];
+  var standard = [6,2,4,2,2,1,1,5];
+  Island.LEVELS.forEach(function (level, i) {
+    level.map = { x: centers[i][0], y: centers[i][1] };
+    level.standard = standard[i];
+    level.challenge = true;
+    level.challengeLimit = standard[i];
+    level.stage = i < 2 ? '热身' : i < 6 ? '基础' : '挑战';
+    level.optional = i === 7;
+  });
+  Island.LEVELS[0].challengeLimit = 8;
+  Island.LEVELS[2].challengeLimit = 5;
 
   Island.MAP = {
     dock: { x: 200, y: 640 },

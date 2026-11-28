@@ -87,6 +87,21 @@
     return n <= max;
   };
 
+  Island.checkSceneCopy = function (scene) {
+    if (scene.add._copyChecked) return;
+    scene.add._copyChecked = true;
+    var original = scene.add.text;
+    scene.add.text = function (x, y, text, style) {
+      function check(value) {
+        String(value == null ? '' : value).split('\n').forEach(function (line) { Island.assertCopy('screen', line, 20); });
+      }
+      check(text);
+      var obj = original.call(this, x, y, text, style), set = obj.setText;
+      obj.setText = function (value) { check(value); return set.call(this, value); };
+      return obj;
+    };
+  };
+
   Island.allow = function (state) {
     return Island.state === state;
   };

@@ -12,7 +12,7 @@
       var opened = false;
       var doorOpen = false;
       var key = null;
-      var last = 0;
+      var last = -Infinity;
       var wait = null;
 
       var door = scene.add.container(1030, 458).setDepth(8);
@@ -29,6 +29,7 @@
       door.tag = here;
 
       var stars = STARS.map(function (p, i) {
+        if (scene.challenge) p = [[350,240],[600,190],[800,300]][i];
         var img = scene.add.image(p[0], p[1], 'prop-star-dim').setDepth(12);
         img.setDisplaySize(92, 90);
         img._bsx = img.scaleX;
@@ -51,6 +52,7 @@
         img.on('pointerup', function (pointer) {
           if (!api.playable() || img.lit) return;
           img.setScale(img._bsx, img._bsy);
+          api.count();
           light(img, pointer);
         });
         return img;
@@ -93,6 +95,7 @@
       }
       function showGift() {
         api.setTask(cfg.tasks[1]);
+        scene.beads.setIndex(1);
         gift.setVisible(true);
         Island.fx.pop(scene, gift, 40, 1);
         armGift();
@@ -115,8 +118,9 @@
         key = makeKey();
         Island.fx.pop(scene, key, 80, 1);
         api.setTask(cfg.tasks[2]);
-        door.halo.setAlpha(0.95);
-        door.tag.setVisible(true);
+        scene.beads.setIndex(2);
+        door.halo.setAlpha(0);
+        door.tag.setVisible(false);
         armKey();
       }
       function makeKey() {
@@ -132,8 +136,8 @@
           targets: function () {
             return [{ id: 'door', x: door.x, y: door.y, magnet: cfg.tuning.magnet, obj: door }];
           },
-          onDrop: function () { openDoor(); },
-          onReject: function () { return api.miss(cfg.bubbles.door); }
+          onDrop: function () { api.count(); openDoor(); },
+          onReject: function () { api.count(); return api.miss(cfg.bubbles.door); }
         });
         return k;
       }
@@ -161,11 +165,29 @@
         door.tag.setVisible(false);
         var doneTag = Island.ui.tag(scene, 980, 540, '开了', 'mint');
         if (scene.lucky) scene.lucky.hop(860, 700);
-        Island.store.clearLevel(cfg.id, scene.coach.stars(), scene.coach.misses, scene.coach.hints);
+
         scene.time.delayedCall(520, function () {
-          if (scene.sys.isActive() && !scene.won) api.win();
+          if (scene.sys.isActive() && !scene.won) { if (scene.challenge) keyboard(); else api.win(); }
         });
         return doneTag;
+      }
+
+      function keyboard() {
+        api.setTask('按住 Shift 敲出 HI');
+        var typed = '';
+        var letters = scene.add.text(650, 300, 'hi → __', Island.style(50)).setOrigin(0.5);
+        var keydown = function (event) {
+          if (!api.playable() || event.repeat || event.key === 'Shift') return;
+          if (event.key === 'Escape') return;
+          api.count();
+          if (!event.shiftKey || event.key !== 'HI'[typed.length]) {
+            api.miss('按住 Shift 再敲'); return;
+          }
+          typed += event.key; letters.setText('hi → ' + typed);
+          if (typed === 'HI') api.win();
+        };
+        scene.input.keyboard.on('keydown', keydown);
+        scene.events.once('shutdown', function () { scene.input.keyboard.off('keydown', keydown); });
       }
 
       gift.on('pointerover', function () {
@@ -181,6 +203,7 @@
       });
       gift.on('pointerup', function (p) {
         if (!api.playable() || opened) return;
+        api.count();
         gift.setScale(gift._bsx, gift._bsy);
         Island.sfx.play('click');
         Island.fx.ring(scene, p.worldX, p.worldY);

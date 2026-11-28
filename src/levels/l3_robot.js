@@ -27,6 +27,11 @@
         { id: 'teeth', label: '刷牙' }
       ];
 
+      if (scene.challenge) {
+        round = 2; slotCount = 5;
+        brush.push({id:'rinse',label:'漱口'}, {id:'shoe',label:'穿鞋'});
+      }
+
       var robot = makeRobot(scene, 651, 400);
       var board = Island.ui.panel(scene, 520, 635, 760, 190);
       board.setDepth(6);
@@ -44,7 +49,7 @@
       }
       function slotX(i) {
         var xs = slotCount === 4 ? [230, 400, 570, 740] : [293, 483, 673];
-        return xs[i];
+        return slotCount === 5 ? 200 + i * 148 : xs[i];
       }
 
       function layoutSlots() {
@@ -72,7 +77,7 @@
         var bg = scene.add.image(0, 0, 'ui-card-blank').setDisplaySize(150, 150);
         var picKey = {
           sock: 'prop-socks', shoe: 'prop-shoe', lace: 'prop-shoe-tied',
-          brush: 'prop-toothbrush', cap: 'prop-toothpaste', paste: 'prop-toothpaste', teeth: 'prop-toothbrush'
+          brush: 'prop-toothbrush', cap: 'prop-toothpaste', paste: 'prop-toothpaste', teeth: 'prop-toothbrush', rinse: 'prop-toothbrush'
         }[def.id];
         var pic = scene.add.image(0, -16, picKey);
         pic.setDisplaySize(72 * pic.width / pic.height, 72);
@@ -128,6 +133,7 @@
         var s = slots[index];
         if (!s) return;
         if (s.card && s.card !== card) return;
+        api.count();
         s.card = card;
         card.slotIndex = index;
         Island.drag.park(card, s.x, s.y);
@@ -164,7 +170,7 @@
         }
         return null;
       }
-      function wanted() { return round === 1 ? ['sock', 'shoe', 'lace'] : ['brush', 'cap', 'paste', 'teeth']; }
+      function wanted() { if (scene.challenge) return ['brush','cap','paste','teeth','rinse']; return round === 1 ? ['sock', 'shoe', 'lace'] : ['brush', 'cap', 'paste', 'teeth']; }
       function nextStep() {
         var want = wanted();
         for (var i = 0; i < slotCount && i < want.length; i++) {
@@ -207,7 +213,7 @@
         var want = wanted();
         if (seq.length !== want.length) return false;
         for (var i = 0; i < want.length; i++) if (seq[i] !== want[i]) return false;
-        return true;
+        return Island.rules.sequence(seq, want);
       }
 
       function playSteps(seq, done) {
@@ -231,13 +237,13 @@
       function run() {
         if (!api.playable() || running) return;
         var seq = sequence();
-        if (!seq.length) {
+        if (seq.length < slotCount) {
           api.say(cfg.bubbles.empty);
           return;
         }
         running = true;
         scene.locked = true;
-        if (round === 2 && slotCount === 3) {
+        if (!scene.challenge && round === 2 && slotCount === 3) {
           robot.oops();
           scene.time.delayedCall(800, function () {
             if (!scene.sys.isActive()) return;
@@ -248,6 +254,7 @@
             cards.forEach(function (c) { if (c.scene) c.destroy(); });
             cards = [];
             slotCount = 4;
+            api.resetSteps();
             layoutSlots();
             spread(brush);
             if (scene.lucky) {
@@ -267,7 +274,9 @@
           else {
             var text = explain(seq);
             robot.oops();
+            scene.locked = true;
             scene.time.delayedCall(500, function () {
+              scene.locked = false;
               robot.reset();
               recall();
               api.miss(text);
@@ -281,7 +290,9 @@
         if (round === 1) {
           robot.dance();
           api.good(robot.x, robot.y);
+          scene.locked = true;
           scene.time.delayedCall(700, function () {
+            scene.locked = false;
             if (!scene.sys.isActive()) return;
             round = 2;
             slotCount = 3;
@@ -303,15 +314,15 @@
         var ys = list.length === 3 ? [430, 400, 360] : [400, 400, 400, 400];
         var xs = list.length === 3 ? [300, 500, 980] : [240, 420, 600, 800];
         list.forEach(function (def, i) {
-          makeCard(def, xs[i], ys[i]);
+          makeCard(def, list.length > 4 ? 180 + i * 175 : xs[i], list.length > 4 ? 400 : ys[i]);
         });
         api.intro(cards);
       }
 
       api.onRun = run;
-      api.setTask(cfg.tasks[0]);
+      api.setTask(scene.challenge ? '五张卡，帮机器人刷牙' : cfg.tasks[0]);
       layoutSlots();
-      spread(shoe);
+      spread(scene.challenge ? brush : shoe);
       api.intro([robot, runBtn]);
       arm();
       this._robot = robot;

@@ -1,4 +1,4 @@
-/* 连错、提示、演示和发呆提醒。星星按失误次数计算。 */
+/* 提示统一计数；挑战关闭提示，按目标轮预算结算。 */
 (function () {
   'use strict';
   var Island = window.Island;
@@ -27,13 +27,10 @@
         c.touch();
       };
       c.stars = function () {
-        var m = c.misses + c.hints;
-        if (m <= 0) return 3;
-        if (m <= 2) return 2;
-        return 1;
+        return Island.rules.stars(c.misses, c.hints, scene.steps, scene.challenge ? scene.cfg.challengeLimit : scene.cfg.standard);
       };
       c.useHint = function () {
-        if (Island.state !== 'PLAY') return;
+        if (Island.state !== 'PLAY' || scene.locked || scene.challenge || !c.hintLine) return;
         c.hints += 1;
         c.touch();
         Island.sfx.play('hint');
@@ -45,38 +42,39 @@
         c.misses += 1;
         c.streak += 1;
         c.touch();
-        if (c.streak >= c.demoAt) {
+        if (!scene.challenge && c.hintLine && c.streak >= c.demoAt) {
           c.hints += 1;
           c.streak = 0;
           Island.sfx.play('hint');
           if (scene.lucky) scene.lucky.nod();
           if (c.demo) c.demo();
-          else if (scene.lucky) scene.lucky.say(text);
+          else if (scene.lucky) scene.lucky.say(text, 'hint');
           return 'demo';
         }
-        if (c.streak >= c.hintAt) {
+        if (!scene.challenge && c.hintLine && c.streak >= c.hintAt) {
           c.hints += 1;
           Island.sfx.play('hint');
           if (c.goal) Island.fx.halo(scene, c.goal);
           if (scene.lucky) {
             scene.lucky.confused();
-            scene.lucky.say(text || c.hintLine);
+            scene.lucky.say(text || c.hintLine, 'hint');
           }
           return 'hint';
         }
         Island.sfx.play('wrong');
         if (scene.lucky) {
           scene.lucky.confused();
-          if (text) scene.lucky.say(text);
+          if (text) scene.lucky.say(text, 'hint');
         }
         return 'wrong';
       };
       c.update = function (now) {
-        if (!c.armed || Island.state !== 'PLAY') return;
+        if (!c.armed || scene.challenge || scene.locked || Island.state !== 'PLAY') return;
         if (!c.goal) return;
         if (now - c.lastAct < c.idleMs) return;
         c.lastAct = now;
         c.idleN += 1;
+        c.hints += 1;
         Island.sfx.play('hint', true);
         Island.fx.blink(scene, c.goal);
         if (scene.lucky) scene.lucky.hint(c.hintLine || '看这里');

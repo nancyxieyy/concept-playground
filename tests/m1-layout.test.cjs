@@ -136,12 +136,12 @@ test('实际启动配置使用 FIT，DPR=2 画布为 2560×1600', () => {
   assert.equal(config.scale.autoCenter, 'center');
 });
 
-test('四个圆台逐一对位，标签间距及底色不随解锁状态改变', () => {
+test('八个节点逐一对位，标签间距及底色不随解锁状态改变', () => {
   const { Island } = load();
   function object(x, y) {
     const o = new EventEmitter();
     Object.assign(o, { x, y, scaleX: 1, scaleY: 1 });
-    for (const name of ['setDepth', 'setAlpha', 'setOrigin', 'setShadow', 'setSize', 'setInteractive', 'setVisible', 'setColor', 'add']) o[name] = () => o;
+    for (const name of ['setScale', 'setTint', 'setDepth', 'setAlpha', 'setOrigin', 'setShadow', 'setSize', 'setInteractive', 'setVisible', 'setColor', 'add']) o[name] = () => o;
     o.setDisplaySize = (w, h) => { o.displayWidth = w; o.displayHeight = h; return o; };
     o.setTexture = key => { o.texture = key; return o; };
     o.setKind = kind => { o.kind = kind; return o; };
@@ -149,7 +149,7 @@ test('四个圆台逐一对位，标签间距及底色不随解锁状态改变',
   }
   Island.hit.rect = () => ({});
   Island.ui.nametag = (scene, x, y) => object(x, y);
-  const centers = [[262, 496], [500, 502], [754, 431], [995, 397]];
+  const centers = [[268,512],[431,522],[603,522],[752,462],[934,458],[1025,358],[1027,246],[1013,150]];
   for (const state of ['locked', 'playable', 'cleared']) {
     Island.store = { isUnlocked: () => state !== 'locked', isCleared: () => state === 'cleared', starsOf: () => 3 };
     const scene = {
@@ -160,7 +160,7 @@ test('四个圆台逐一对位，标签间距及底色不随解锁状态改变',
     scene.nodes.forEach((node, i) => {
       close(node.x, centers[i][0]); close(node.y, centers[i][1]);
       close(node.tag.x, node.x);
-      const gap = node.tag.y - 23 - (node.y + node.face.y + node.face.displayHeight / 2);
+      const gap = node.tag.y - 14 - (node.y + node.face.y + node.face.displayHeight / 2);
       assert.ok(gap >= 8 && gap <= 12, `第 ${i + 1} 个标签间距为 ${gap}`);
       assert.equal(node.tag.kind, 'peach');
     });
@@ -189,7 +189,7 @@ test('HUD 按钮重定位后，悬停、按下和移出恢复新位置', () => {
   button.emit('pointerout'); close(button.y, 80);
 });
 
-test('四关原有文案检查通过，离线入口引用全部存在', () => {
+test('八关文案检查通过，离线入口引用全部存在', () => {
   const { errors } = load();
   assert.deepEqual(errors, []);
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');

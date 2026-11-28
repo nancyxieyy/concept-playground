@@ -3,26 +3,14 @@
   'use strict';
   var Island = window.Island;
 
-  var NODE = [
-    { x: 262, y: 496 },
-    { x: 500, y: 502 },
-    { x: 754, y: 431 },
-    { x: 995, y: 397 }
-  ];
-  var BLURB = ['第 1 关 · 鼠标三招', '第 2 关 · 文件夹', '第 3 关 · 顺序', '第 4 关 · 重复'];
-  var CARD = [
-    { x: 210, y: 248 },
-    { x: 390, y: 248 },
-    { x: 430, y: 200 },
-    { x: 620, y: 188 }
-  ];
-  var SEG = [
-    [[262, 500], [380, 505], [420, 505], [500, 505]],
-    [[500, 505], [610, 505], [640, 440], [754, 436]],
-    [[754, 436], [860, 436], [900, 402], [995, 400]],
-    [[995, 400], [1060, 370], [1040, 300], [1025, 262]]
-  ];
-  var CHEST = { x: 1025, y: 249, nx: 1025, ny: 287 };
+  var NODE = Island.LEVELS.map(function (l) { return l.map; });
+  var BLURB = Island.LEVELS.map(function (l, i) { return '第 ' + (i + 1) + ' 关 · ' + (l.optional ? '选做' : l.stage); });
+  var CARD = NODE.map(function () { return {x: 280, y: 270}; });
+  var SEG = NODE.slice(0,-1).map(function (p, i) {
+    var q = NODE[i+1]; return [[p.x,p.y],[p.x,p.y],[q.x,q.y],[q.x,q.y]];
+  });
+  // 第七关右侧的窄草地；缩小宝箱和锁牌，避开圆牌、道路及下方树冠。
+  var CHEST = { x: 1150, y: 250, nx: 1150, ny: 250 };
 
   function bez(p, t) {
     var m = 1 - t;
@@ -43,13 +31,14 @@
 
     create() {
       var self = this;
+      Island.checkSceneCopy(this);
       Island.clearWatch();
       this._done = false;
       var just = this.entry.justCleared || null;
       var calm = Island.MOTION.calm;
       Island.ui.stage(this);
       Island.fx.placeCam(this.cameras.main, 640, 400, 1);
-      Island.layout.background(this, 'bg-map');
+      Island.layout.background(this, 'bg-map-island8');
 
       this.segments = [];
       this.buildPath(just);
@@ -154,17 +143,17 @@
         var cleared = Island.store.isCleared(level.id);
         if (just === level.id) cleared = false;
         var c = self.add.container(spec.x, spec.y).setDepth(8);
-        var halo = self.add.image(0, 0, 'ui-halo-cool').setDisplaySize(132, 132).setAlpha(0.5);
+        var halo = self.add.image(0, 0, 'ui-halo-cool').setDisplaySize(78, 78).setAlpha(0.5);
         var face = self.add.image(0, 4, unlocked && !cleared ? 'ui-node-play' : cleared ? 'ui-node-done' : 'ui-node-lock');
-        face.setDisplaySize(108, 110);
-        var num = self.add.text(0, -2, String(i + 1), Island.style(36, unlocked && !cleared ? '#FFFFFF' : '#7A4E2A')).setOrigin(0.5);
+        face.setDisplaySize(56, 54);
+        var num = self.add.text(0, -2, String(i + 1), Island.style(28, unlocked && !cleared ? '#FFFFFF' : '#7A4E2A')).setOrigin(0.5);
         if (unlocked && !cleared) num.setShadow(0, 2, '#4A8FB0', 0, true, true);
-        var mark = self.add.image(0, -2, 'icon-check-white').setDisplaySize(40, 40);
+        var mark = self.add.image(0, -2, 'icon-check-white').setDisplaySize(28, 28);
         mark._bsx = mark.scaleX;
         mark._bsy = mark.scaleY;
         var stars = [];
         for (var s = 0; s < 3; s++) {
-          var star = self.add.image((s - 1) * 22, -62, 'prop-star-lit').setDisplaySize(s === 1 ? 28 : 22, s === 1 ? 28 : 22);
+          var star = self.add.image(48, (s - 1) * 18, 'prop-star-lit').setDisplaySize(16, 16);
           stars.push(star);
         }
         c.add([halo, face, num, mark].concat(stars));
@@ -177,11 +166,13 @@
         c.halo = halo;
         c.stars = stars;
         // 圆牌底边 4 + 55，挂签半高 23，中间留 10。
-        c.tag = Island.ui.nametag(self, spec.x, spec.y + 92, level.name, 'peach');
+        c.tag = Island.ui.nametag(self, spec.x, spec.y + 55, level.name + (level.optional ? '·选做' : ''), 'peach', true);
         c.tag.setDepth(8);
+        c.gold = self.add.image(-46, 0, 'prop-star-lit').setDisplaySize(22,22).setTint(0xFFD34D);
+        c.add(c.gold);
         self.paintNode(c, unlocked, cleared);
         c.setInteractive({
-          hitArea: Island.hit.rect(c, 140, 110),
+          hitArea: Island.hit.rect(c, 72, 72),
           hitAreaCallback: Phaser.Geom.Rectangle.Contains,
           useHandCursor: true
         });
@@ -229,12 +220,13 @@
       node.stars.forEach(function (star, i) {
         star.setVisible(!!cleared);
         star.setTexture(i < stars ? 'prop-star-lit' : 'prop-star-dim');
-        var h = i === 1 ? 28 : 22;
+        var h = 16;
         star.setDisplaySize(h, h);
         star._bsx = star.scaleX;
         star._bsy = star.scaleY;
       });
       node.tag.setKind('peach');
+      node.gold.setVisible(!!(Island.store.goldOf && Island.store.goldOf(node.levelId)));
     }
 
     revealCleared(node) {
@@ -267,7 +259,7 @@
           Island.fx.tween(self, node, { scaleX: 1, scaleY: 1 }, { dur: 320, ease: 'Back.easeOut' });
         }
         if (self.fresh) self.fresh.destroy();
-        self.fresh = Island.ui.tag(self, node.x + 78, node.y - 20, '新关卡！', 'mint');
+        self.fresh = Island.ui.tag(self, node.x - 90, node.y - 42, '新关卡！', 'mint');
         self.fresh.setDepth(12);
       };
       if (Island.MOTION.calm) pop();
@@ -287,15 +279,15 @@
       var self = this;
       var open = Island.store.badge();
       var img = this.add.image(CHEST.x, CHEST.y - 36, open ? 'prop-chest-open' : 'prop-chest-closed').setDepth(6);
-      img.setDisplaySize(open ? 150 : 144, open ? 168 : 130);
+      img.setDisplaySize(open ? 120 : 115, open ? 134 : 104);
       var lock = this.add.container(CHEST.nx, CHEST.ny).setDepth(8);
-      var face = this.add.image(0, 4, 'ui-node-lock').setDisplaySize(96, 96);
-      var icon = this.add.image(0, 0, 'icon-lock').setDisplaySize(34, 34);
+      var face = this.add.image(0, 4, 'ui-node-lock').setDisplaySize(64, 64);
+      var icon = this.add.image(0, 0, 'icon-lock').setDisplaySize(26, 26);
       lock.add([face, icon]);
-      lock.setSize(96, 96);
+      lock.setSize(64, 64);
       lock.setVisible(!open);
       lock.setInteractive({
-        hitArea: Island.hit.rect(lock, 96, 96),
+        hitArea: Island.hit.rect(lock, 64, 64),
         hitAreaCallback: Phaser.Geom.Rectangle.Contains,
         useHandCursor: true
       });
@@ -362,6 +354,10 @@
     }
 
     goalFeet() {
+      // 第七关返回时先走向宝箱，领完徽章再前往选做的第八关。
+      if (!this._done && this.entry && this.entry.justCleared === 'turtlePlus' && Island.store.badge()) {
+        return { x: CHEST.x - 70, y: CHEST.y + 20 };
+      }
       for (var i = 0; i < Island.LEVELS.length; i++) {
         if (!Island.store.isCleared(Island.LEVELS[i].id)) return feet(i);
       }
@@ -451,7 +447,7 @@
       });
       this.time.delayedCall(2100, function () {
         if (!self.sys.isActive()) return;
-        if (just === 'turtle' && Island.store.badge()) self.openCeremony();
+        if (just === 'turtlePlus' && Island.store.badge()) self.openCeremony();
         else self.becomeIdle();
       });
     }
@@ -465,7 +461,7 @@
       this.flash.setAlpha(0);
       var spot = this.goalFeet();
       if (this.lucky) this.lucky.root.setPosition(spot.x, spot.y);
-      if (this.entry.justCleared === 'turtle' && Island.store.badge()) this.openCeremony();
+      if (this.entry.justCleared === 'turtlePlus' && Island.store.badge()) this.openCeremony();
       else this.becomeIdle();
     }
 
@@ -476,7 +472,7 @@
       this.input.enabled = true;
       if (this.card) this.card.setVisible(false);
       this.chest.setTexture('prop-chest-open');
-      this.chest.setDisplaySize(150, 168);
+      this.chest.setDisplaySize(120, 134);
       this.chest.setVisible(false);
       this.chestLock.setVisible(false);
       this.nodes.forEach(function (n) {
@@ -491,7 +487,7 @@
       var badge = this.add.image(640, 250, 'prop-badge-island').setDisplaySize(180, 228);
       var name = Island.ui.nametag(this, 640, 390, '电脑小岛岛主', 'peach');
       var persimmon = this.add.image(640 - name.width / 2 + 6, 390, 'icon-persimmon').setDisplaySize(36, 36);
-      var line = Island.ui.tag(this, 640, 456, '4 关全通，小岛是你的了！', 'cream');
+      var line = Island.ui.tag(this, 640, 456, '七关完成，小岛是你的了！', 'cream');
       var chest = this.add.image(640, 600, 'prop-chest-open').setDisplaySize(230, 250);
       var btn = Island.ui.button(this, 1080, 730, 220, 72, '收下徽章', function () { self._take(); }, { states: ['MODAL'] });
       layer.add([scrim, rays, chest, badge, name, persimmon, line, btn]);
