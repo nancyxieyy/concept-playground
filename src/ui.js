@@ -29,6 +29,11 @@
   }
 
   function hand(obj, scene, states, onClick, home) {
+    obj.setHomePosition = function (x, y) {
+      home.x = x;
+      home.y = y;
+      obj.setPosition(x, y);
+    };
     obj.setInteractive({
       hitArea: Island.hit.rect(obj, obj.width, obj.height),
       hitAreaCallback: Phaser.Geom.Rectangle.Contains,

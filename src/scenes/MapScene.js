@@ -4,10 +4,10 @@
   var Island = window.Island;
 
   var NODE = [
-    { x: 262, y: 534, px: 262, py: 496 },
-    { x: 500, y: 540, px: 500, py: 502 },
-    { x: 754, y: 469, px: 754, py: 431 },
-    { x: 995, y: 435, px: 995, py: 397 }
+    { x: 262, y: 496 },
+    { x: 500, y: 502 },
+    { x: 754, y: 431 },
+    { x: 995, y: 397 }
   ];
   var BLURB = ['第 1 关 · 鼠标三招', '第 2 关 · 文件夹', '第 3 关 · 顺序', '第 4 关 · 重复'];
   var CARD = [
@@ -33,7 +33,8 @@
   }
 
   function feet(i) {
-    return { x: NODE[i].px, y: NODE[i].py + 14 };
+    // 站在圆台旁，避免对位后的圆牌被 Lucky 遮住。
+    return { x: NODE[i].x - 120, y: NODE[i].y + 14 };
   }
 
   Island.MapScene = class extends Phaser.Scene {
@@ -48,7 +49,7 @@
       var calm = Island.MOTION.calm;
       Island.ui.stage(this);
       Island.fx.placeCam(this.cameras.main, 640, 400, 1);
-      this.add.image(0, 0, 'bg-map').setOrigin(0, 0).setDisplaySize(1280, 800).setDepth(0);
+      Island.layout.background(this, 'bg-map');
 
       this.segments = [];
       this.buildPath(just);
@@ -175,7 +176,8 @@
         c.mark = mark;
         c.halo = halo;
         c.stars = stars;
-        c.tag = Island.ui.nametag(self, spec.x, spec.y + 58, level.name, 'dim');
+        // 圆牌底边 4 + 55，挂签半高 23，中间留 10。
+        c.tag = Island.ui.nametag(self, spec.x, spec.y + 92, level.name, 'peach');
         c.tag.setDepth(8);
         self.paintNode(c, unlocked, cleared);
         c.setInteractive({
@@ -232,7 +234,7 @@
         star._bsx = star.scaleX;
         star._bsy = star.scaleY;
       });
-      node.tag.setKind(cleared ? 'mint' : unlocked ? 'peach' : 'dim');
+      node.tag.setKind('peach');
     }
 
     revealCleared(node) {
@@ -324,6 +326,12 @@
       this.mute.setMutedIcon(Island.store.muted());
       this.hud.add([this.counter, title, icon, this.mute]);
       this.titleIcon = icon;
+      Island.layout.watch(this, function (rect) {
+        this.counter.setPosition(rect.left + 110, rect.top + 52);
+        title.setPosition(rect.centerX, rect.top + 50);
+        icon.setPosition(rect.centerX - title.width / 2 + 8, rect.top + 50);
+        this.mute.setHomePosition(rect.right - 56, rect.top + 52);
+      });
       if (Island.DEBUG) {
         this._fps = this.add.text(24, 112, '', Island.style(18, '#4A3222')).setOrigin(0, 0.5);
         this.hud.add(this._fps);
